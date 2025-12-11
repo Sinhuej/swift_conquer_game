@@ -8,7 +8,7 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text("Swift Conquer")),
       body: const Center(
-        child: Text("Welcome to Swift Conquer Prototype"),
+        child: Text("Swift Conquer Base Build Ready"),
       ),
     );
   }

@@ -11,6 +11,7 @@ class SwiftConquerApp extends StatelessWidget {
     return MaterialApp(
       title: "Swift Conquer",
       home: const HomeScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

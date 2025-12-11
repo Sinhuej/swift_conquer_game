@@ -1,18 +1,18 @@
 name: swift_conquer_game
-description: Swift Conquer minimal rebuild
-version: 1.0.0
+description: A minimal Flutter shell for GitHub builds
+publish_to: "none"
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.3.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  flame: any
+  flame: ^1.14.0
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/
     - assets/fonts/
+    - assets/images/
     - assets/sfx/

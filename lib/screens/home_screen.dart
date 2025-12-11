@@ -7,16 +7,8 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Swift Conquer")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              child: const Text("Start Mini Map Test"),
-              onPressed: () {},
-            ),
-          ],
-        ),
+      body: const Center(
+        child: Text("Welcome to Swift Conquer Prototype"),
       ),
     );
   }

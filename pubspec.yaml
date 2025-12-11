@@ -1,0 +1,24 @@
+name: swift_conquer_game
+description: Swift Conquer RTS built via echo scripts
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flame: ^1.14.0
+  swift_conquer_engine:
+    git:
+      url: https://github.com/Sinhuej/swift_conquer_engine.git
+
+flutter:
+  assets:
+    - assets/images/
+    - assets/sfx/
+  fonts:
+    - family: GameFont
+      fonts:
+        - asset: assets/fonts/GameFont.ttf

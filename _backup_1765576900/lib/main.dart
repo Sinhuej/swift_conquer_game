@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/home_screen.dart';
 import 'screens/test_screen.dart';
 
 void main() {
@@ -12,8 +13,12 @@ class SwiftConquerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'SwiftConquer',
-      theme: ThemeData.dark(),
-      home: const TestScreen(),
+      theme: ThemeData(useMaterial3: true),
+      routes: {
+        '/': (_) => const HomeScreen(),
+        '/test': (_) => const TestScreen(),
+      },
+      initialRoute: '/',
     );
   }
 }

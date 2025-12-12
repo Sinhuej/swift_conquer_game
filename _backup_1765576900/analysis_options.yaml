@@ -1,6 +1,5 @@
 include: package:flutter_lints/flutter.yaml
 
-lints:
+linter:
   rules:
-    prefer_const_constructors: true
     avoid_print: false

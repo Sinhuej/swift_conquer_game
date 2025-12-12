@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flame/game.dart';
-import '../game/swift_conquer_game.dart';
 
 class TestScreen extends StatelessWidget {
   const TestScreen({super.key});
@@ -8,8 +6,13 @@ class TestScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Test Map')),
-      body: GameWidget(game: SwiftConquerGame()),
+      appBar: AppBar(title: const Text('SwiftConquer')),
+      body: const Center(
+        child: Text(
+          'SwiftConquer rebuild successful!',
+          style: TextStyle(fontSize: 20),
+        ),
+      ),
     );
   }
 }

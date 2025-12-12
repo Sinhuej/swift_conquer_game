@@ -1,32 +1,27 @@
-class WorldState {
-  final Map<int, UnitState> units = {};
+import 'attack_event.dart';
+import '../components/health_component.dart';
 
-  int _nextId = 1;
+class Entity {
+  final int id;
+  HealthComponent? health;
 
-  int spawnUnit(double x, double y, {int hp = 100}) {
-    final id = _nextId++;
-    units[id] = UnitState(
-      id: id,
-      x: x,
-      y: y,
-      hp: hp,
-    );
-    return id;
-  }
+  Entity(this.id);
 }
 
-class UnitState {
-  final int id;
-  double x;
-  double y;
-  int hp;
+class WorldState {
+  final Map<int, Entity> entities = {};
+  final List<AttackEvent> pendingAttacks = [];
 
-  UnitState({
-    required this.id,
-    required this.x,
-    required this.y,
-    required this.hp,
-  });
+  Entity createEntity(int id, {double? hp}) {
+    final e = Entity(id);
+    if (hp != null) {
+      e.health = HealthComponent(hp);
+    }
+    entities[id] = e;
+    return e;
+  }
 
-  bool get isAlive => hp > 0;
+  void queueAttack(int targetId, double damage) {
+    pendingAttacks.add(AttackEvent(targetId, damage));
+  }
 }

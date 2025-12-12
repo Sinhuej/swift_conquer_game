@@ -5,6 +5,7 @@ class SystemManager {
 
   void add(GameSystem system) {
     _systems.add(system);
+    systems.add(CombatSystem());
   }
 
   void update(double dt) {

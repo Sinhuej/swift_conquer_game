@@ -1,14 +1,13 @@
 class HealthComponent {
-  double maxHealth;
-  double currentHealth;
+  double maxHp;
+  double hp;
 
-  HealthComponent({required this.maxHealth})
-      : currentHealth = maxHealth;
+  HealthComponent(this.maxHp) : hp = maxHp;
 
-  bool get isAlive => currentHealth > 0;
+  bool get isAlive => hp > 0;
 
   void damage(double amount) {
-    currentHealth -= amount;
-    if (currentHealth < 0) currentHealth = 0;
+    hp -= amount;
+    if (hp < 0) hp = 0;
   }
 }

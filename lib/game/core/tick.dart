@@ -1,3 +1,4 @@
 class Tick {
-  static const double fixedDelta = 1 / 60;
+  final double dt;
+  Tick(this.dt);
 }

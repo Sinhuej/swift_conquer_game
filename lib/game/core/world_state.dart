@@ -1,19 +1,32 @@
-import '../entities/unit.dart';
-import '../entities/tile.dart';
-
 class WorldState {
-  final Map<int, Unit> units = {};
-  final Map<int, Tile> tiles = {};
+  final Map<int, UnitState> units = {};
 
-  int _nextId = 0;
+  int _nextId = 1;
 
-  int nextId() => _nextId++;
-
-  void addUnit(Unit unit) {
-    units[unit.id] = unit;
+  int spawnUnit(double x, double y, {int hp = 100}) {
+    final id = _nextId++;
+    units[id] = UnitState(
+      id: id,
+      x: x,
+      y: y,
+      hp: hp,
+    );
+    return id;
   }
+}
 
-  void addTile(Tile tile) {
-    tiles[tile.id] = tile;
-  }
+class UnitState {
+  final int id;
+  double x;
+  double y;
+  int hp;
+
+  UnitState({
+    required this.id,
+    required this.x,
+    required this.y,
+    required this.hp,
+  });
+
+  bool get isAlive => hp > 0;
 }

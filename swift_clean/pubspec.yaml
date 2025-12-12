@@ -1,11 +1,17 @@
 name: swift_clean
-description: Clean minimal Flutter app for workflow testing.
+description: Minimal clean Flutter project for SwiftConquer
+publish_to: 'none'
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
     sdk: flutter
 
 flutter:

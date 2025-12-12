@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
+import 'screens/home_screen.dart';
 
 void main() {
-  runApp(const SwiftCleanApp());
+  runApp(const SwiftConquerApp());
 }
 
-class SwiftCleanApp extends StatelessWidget {
-  const SwiftCleanApp({super.key});
+class SwiftConquerApp extends StatelessWidget {
+  const SwiftConquerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Swift Clean Test',
-      home: Scaffold(
-        appBar: AppBar(title: const Text('Swift Clean Build Test')),
-        body: const Center(child: Text('Workflow OK!')),
-      ),
+      title: "SwiftConquer",
+      theme: ThemeData.dark(),
+      home: const HomeScreen(),
     );
   }
 }

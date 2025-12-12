@@ -1,24 +1,21 @@
 name: swift_conquer_game
-description: Clean Flutter shell so GitHub Actions can build an APK.
-publish_to: "none"
+description: Ultimate SwiftConquer RTS – Phase 15
+publish_to: 'none'
+
+version: 0.1.0+1
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
-  flame: ^1.34.0
     sdk: flutter
-  flutter_lints: ^3.0.0
 
-flutter:
-  uses-material-design: true
-  assets:
-    - assets/images/
-    - assets/fonts/
-    - assets/sfx/
+  cupertino_icons: ^1.0.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

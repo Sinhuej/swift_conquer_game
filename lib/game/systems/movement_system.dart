@@ -1,5 +1,8 @@
-class MovementSystem {
+import 'game_system.dart';
+
+class MovementSystem implements GameSystem {
+  @override
   void update(double dt) {
-    // Phase 15 placeholder
+    // Phase 16: unit movement logic will go here
   }
 }

@@ -1,4 +1,4 @@
-name: Flutter APK Build (Self-Reconstructing)
+name: Flutter APK Build
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install Flutter
@@ -18,30 +18,21 @@ jobs:
         with:
           channel: stable
 
-      - name: Recreate Flutter platform folders
+      - name: Rebuild Android platform
         run: |
-          echo "=== Rebuilding platform folders ==="
-
-          rm -rf android ios macos linux windows web
-
+          rm -rf android
           flutter create . --platforms=android \
             --project-name swift_conquer_game \
             --org com.swiftconquer
 
-          echo "=== Platform folders rebuilt ==="
-
-      - name: Get Flutter Packages
+      - name: Get Packages
         run: flutter pub get
-
-      - name: Analyze (ignore errors temporarily)
-        run: flutter analyze || true
 
       - name: Build Release APK
         run: flutter build apk --release
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: swift-conquer-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-

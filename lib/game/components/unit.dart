@@ -1,45 +1,44 @@
 import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flame/components.dart';
-import 'package:flame/input.dart';
-import 'package:flutter/material.dart';
+import 'package:flame/extensions.dart';
 
-class UnitComponent extends PositionComponent with TapCallbacks {
-  UnitComponent({
-    required Vector2 start,
-    this.radius = 14,
-  }) : _target = start.clone() {
+class UnitComponent extends PositionComponent {
+  UnitComponent({required Vector2 start}) {
     position = start.clone();
     anchor = Anchor.center;
-    size = Vector2.all(radius * 2);
+    size = Vector2.all(28);
   }
 
-  final double radius;
-  final Paint _paint = Paint()..color = const Color(0xFF6C63FF);
-  Vector2 _target;
-
-  // Units per second
-  double speed = 220;
+  Vector2? _target;
+  final double speed = 220; // px/sec
 
   void moveTo(Vector2 worldPoint) {
     _target = worldPoint.clone();
   }
 
   @override
-  void render(Canvas canvas) {
-    canvas.drawCircle(Offset(radius, radius), radius, _paint);
-    // little center dot for direction readability
-    canvas.drawCircle(Offset(radius, radius), 3, Paint()..color = Colors.white);
+  void update(double dt) {
+    super.update(dt);
+    final t = _target;
+    if (t == null) return;
+
+    final toTarget = t - position;
+    final dist = toTarget.length;
+    if (dist < 2) {
+      _target = null;
+      return;
+    }
+
+    final dir = toTarget / dist;
+    final step = speed * dt;
+    position += dir * math.min(step, dist);
   }
 
   @override
-  void update(double dt) {
-    super.update(dt);
-    final toTarget = _target - position;
-    final dist = toTarget.length;
-    if (dist < 1) return;
-
-    final step = speed * dt;
-    final dir = toTarget / math.max(dist, 0.0001);
-    position += dir * math.min(step, dist);
+  void render(Canvas canvas) {
+    // simple “unit” circle
+    final paint = Paint()..color = const Color(0xFF3F51B5);
+    canvas.drawCircle(Offset.zero, 14, paint);
   }
 }

@@ -1,1 +1,6 @@
 _backup_phase*
+
+# SwiftConquer local backups / scratch
+_backup_*/
+_backup_phase*/
+swift_temp/

@@ -10,13 +10,8 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(title: const Text("SwiftConquer Home")),
       body: Center(
         child: ElevatedButton(
-          child: const Text("Open Test Screen"),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const TestScreen()),
-            );
-          },
+          child: const Text("Launch Test Screen"),
+          onPressed: () => Navigator.pushNamed(context, '/test'),
         ),
       ),
     );

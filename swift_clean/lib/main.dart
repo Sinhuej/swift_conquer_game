@@ -11,9 +11,12 @@ class SwiftConquerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "SwiftConquer",
+      title: 'SwiftConquer',
       theme: ThemeData.dark(),
-      home: const HomeScreen(),
+      routes: {
+        '/': (_) => const HomeScreen(),
+        '/test': (_) => const TestScreen(),
+      },
     );
   }
 }

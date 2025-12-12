@@ -1,7 +1,11 @@
-class WorldState {
-  double time = 0.0;
+import '../entities/unit.dart';
 
-  void advance(double dt) {
-    time += dt;
+class WorldState {
+  final Map<int, Unit> units = {};
+
+  void addUnit(Unit unit) {
+    units[unit.id] = unit;
   }
+
+  Unit? getUnit(int id) => units[id];
 }

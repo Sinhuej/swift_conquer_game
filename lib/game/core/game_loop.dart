@@ -1,9 +1,12 @@
-import '../systems/system_manager.dart';
+import 'world_state.dart';
+import '../systems/combat_system.dart';
 
 class GameLoop {
-  final SystemManager systems = SystemManager();
+  final WorldState world = WorldState();
+  final CombatSystem combat = CombatSystem();
 
-  void tick(double dt) {
-    systems.update(dt);
+  void update(double dt) {
+    // Phase 17: systems tick here
   }
 }
+

@@ -1,8 +1,14 @@
 import 'game_system.dart';
 
-class SelectionSystem implements GameSystem {
+class SelectionSystem extends GameSystem {
+  int? selectedEntity;
+
+  void select(int id) {
+    selectedEntity = id;
+  }
+
   @override
   void update(double dt) {
-    // Phase 16: handle unit selection / deselection
+    // Phase 16: idle
   }
 }

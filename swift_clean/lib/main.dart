@@ -13,6 +13,7 @@ class SwiftConquerApp extends StatelessWidget {
     return MaterialApp(
       title: 'SwiftConquer',
       theme: ThemeData.dark(),
+      debugShowCheckedModeBanner: false,
       routes: {
         '/': (_) => const HomeScreen(),
         '/test': (_) => const TestScreen(),

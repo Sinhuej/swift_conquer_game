@@ -6,8 +6,13 @@ class TestScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Test Screen")),
-      body: const Center(child: Text("SwiftConquer rebuild successful!")),
+      appBar: AppBar(title: const Text("Engine Test")),
+      body: const Center(
+        child: Text(
+          "SwiftConquer rebuild successful!",
+          style: TextStyle(fontSize: 22),
+        ),
+      ),
     );
   }
 }

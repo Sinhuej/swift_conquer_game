@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'test_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -7,11 +6,11 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("SwiftConquer Home")),
+      appBar: AppBar(title: const Text("SwiftConquer")),
       body: Center(
         child: ElevatedButton(
-          child: const Text("Launch Test Screen"),
           onPressed: () => Navigator.pushNamed(context, '/test'),
+          child: const Text("Launch Engine Test"),
         ),
       ),
     );

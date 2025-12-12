@@ -1,2 +1,3 @@
-// Ignored placeholder test
-void main() {}
+void main() {
+  // Intentionally empty for Phase 15
+}

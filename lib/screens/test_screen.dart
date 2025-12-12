@@ -5,12 +5,12 @@ class TestScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('SwiftConquer')),
-      body: const Center(
+    return const Scaffold(
+      body: Center(
         child: Text(
-          'SwiftConquer Phase 15 — Build Stable',
-          style: TextStyle(fontSize: 18),
+          'SwiftConquer Phase 15\nBuild Successful',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 24),
         ),
       ),
     );

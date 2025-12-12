@@ -9,8 +9,8 @@ class TestScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('SwiftConquer')),
       body: const Center(
         child: Text(
-          'SwiftConquer rebuild successful!',
-          style: TextStyle(fontSize: 20),
+          'SwiftConquer Phase 15 — Build Stable',
+          style: TextStyle(fontSize: 18),
         ),
       ),
     );

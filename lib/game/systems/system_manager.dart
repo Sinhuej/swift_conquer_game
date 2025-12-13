@@ -22,3 +22,7 @@ class SystemManager {
   void addCombat(WorldState world) {
     systems.add(CombatSystem(world));
   }
+
+  void addCombat(WorldState world) {
+    systems.add(CombatSystem(world));
+  }

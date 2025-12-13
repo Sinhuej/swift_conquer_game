@@ -1,314 +1,316 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "=== Phase 20A: Combat ECS + WorldState expansion ==="
+echo "=== Phase 20A: ECS combat + world state expansion ==="
 
-mkdir -p lib/game/core lib/game/systems lib/game/components lib/game/math
+mkdir -p lib/game/core
+mkdir -p lib/game/components
+mkdir -p lib/game/systems
 
-# ---------- math helpers ----------
-cat > lib/game/math/vec2.dart <<'DART'
-class Vec2 {
+cat > lib/game/core/entity_id.dart <<'DART'
+typedef EntityId = int;
+DART
+
+cat > lib/game/components/position.dart <<'DART'
+class Position {
   double x;
   double y;
-  Vec2(this.x, this.y);
+  Position(this.x, this.y);
 
-  Vec2 copy() => Vec2(x, y);
+  double distanceTo(Position other) {
+    final dx = other.x - x;
+    final dy = other.y - y;
+    return (dx * dx + dy * dy).sqrt();
+  }
+}
 
-  Vec2 operator +(Vec2 other) => Vec2(x + other.x, y + other.y);
-  Vec2 operator -(Vec2 other) => Vec2(x - other.x, y - other.y);
-  Vec2 operator *(double s) => Vec2(x * s, y * s);
+extension _Sqrt on double {
+  double sqrt() => Math.sqrt(this);
+}
 
-  double get length2 => x * x + y * y;
+class Math {
+  static double sqrt(double v) => v <= 0 ? 0 : _sqrtNewton(v);
+  static double _sqrtNewton(double v) {
+    var x = v;
+    for (int i = 0; i < 12; i++) {
+      if (x == 0) return 0;
+      x = 0.5 * (x + v / x);
+    }
+    return x;
+  }
 }
 DART
 
-# ---------- core: world state ----------
-cat > lib/game/core/world_state.dart <<'DART'
-import '../math/vec2.dart';
-
-class UnitState {
-  final int id;
-  int team; // 0=player, 1=enemy (for now)
-  Vec2 pos;
-  Vec2 vel;
-
-  double radius;
-  double hp;
-  double maxHp;
-
-  double attackDamage;
-  double attackRange;
-  double attackCooldown; // seconds
-  double attackTimer;    // time until can attack again
-
-  int? targetUnitId;
-
-  UnitState({
-    required this.id,
-    required this.team,
-    required this.pos,
-    Vec2? vel,
-    this.radius = 14,
-    this.hp = 100,
-    this.maxHp = 100,
-    this.attackDamage = 10,
-    this.attackRange = 90,
-    this.attackCooldown = 0.8,
-    this.attackTimer = 0,
-    this.targetUnitId,
-  }) : vel = vel ?? Vec2(0, 0);
-
-  bool get isAlive => hp > 0;
+cat > lib/game/components/team.dart <<'DART'
+class Team {
+  final int id; // 1 = player, 2 = enemy, etc.
+  const Team(this.id);
 }
+DART
+
+cat > lib/game/components/health.dart <<'DART'
+class Health {
+  int hp;
+  final int maxHp;
+  Health(this.hp, this.maxHp);
+
+  bool get isDead => hp <= 0;
+  void damage(int amount) {
+    hp -= amount;
+    if (hp < 0) hp = 0;
+  }
+}
+DART
+
+cat > lib/game/components/attack.dart <<'DART'
+class Attack {
+  final int damage;
+  final double range;
+  final double cooldown; // seconds per hit
+  double _cdLeft = 0;
+
+  Attack({
+    required this.damage,
+    required this.range,
+    required this.cooldown,
+  });
+
+  bool get ready => _cdLeft <= 0;
+
+  void tick(double dt) {
+    if (_cdLeft > 0) _cdLeft -= dt;
+    if (_cdLeft < 0) _cdLeft = 0;
+  }
+
+  void trigger() {
+    _cdLeft = cooldown;
+  }
+}
+DART
+
+cat > lib/game/components/move_order.dart <<'DART'
+import 'position.dart';
+
+class MoveOrder {
+  Position? target;
+  MoveOrder({this.target});
+}
+DART
+
+cat > lib/game/components/target_order.dart <<'DART'
+import '../core/entity_id.dart';
+
+class TargetOrder {
+  EntityId? targetId;
+  TargetOrder({this.targetId});
+}
+DART
+
+cat > lib/game/core/world_state.dart <<'DART'
+import 'entity_id.dart';
+import '../components/position.dart';
+import '../components/team.dart';
+import '../components/health.dart';
+import '../components/attack.dart';
+import '../components/move_order.dart';
+import '../components/target_order.dart';
 
 class WorldState {
   int _nextId = 1;
 
-  final Map<int, UnitState> units = {};
-  int? selectedUnitId;
+  final Map<EntityId, Position> positions = {};
+  final Map<EntityId, Team> teams = {};
+  final Map<EntityId, Health> health = {};
+  final Map<EntityId, Attack> attacks = {};
+  final Map<EntityId, MoveOrder> moveOrders = {};
+  final Map<EntityId, TargetOrder> targetOrders = {};
 
-  // Simple bounds for now (world coords)
-  double worldW = 1200;
-  double worldH = 800;
-
-  int spawnUnit({
-    required int team,
-    required Vec2 pos,
-    double hp = 100,
-    double dmg = 10,
-    double range = 90,
-    double cd = 0.8,
+  EntityId spawnUnit({
+    required double x,
+    required double y,
+    required int teamId,
+    required int hp,
+    required int damage,
+    required double range,
+    required double cooldown,
   }) {
     final id = _nextId++;
-    units[id] = UnitState(
-      id: id,
-      team: team,
-      pos: pos,
-      hp: hp,
-      maxHp: hp,
-      attackDamage: dmg,
-      attackRange: range,
-      attackCooldown: cd,
-    );
+    positions[id] = Position(x, y);
+    teams[id] = Team(teamId);
+    health[id] = Health(hp, hp);
+    attacks[id] = Attack(damage: damage, range: range, cooldown: cooldown);
+    moveOrders[id] = MoveOrder();
+    targetOrders[id] = TargetOrder();
     return id;
   }
 
-  Iterable<UnitState> aliveUnits() => units.values.where((u) => u.isAlive);
+  void despawn(EntityId id) {
+    positions.remove(id);
+    teams.remove(id);
+    health.remove(id);
+    attacks.remove(id);
+    moveOrders.remove(id);
+    targetOrders.remove(id);
+  }
 
-  void cullDead() {
-    units.removeWhere((_, u) => !u.isAlive);
-    if (selectedUnitId != null && !units.containsKey(selectedUnitId)) {
-      selectedUnitId = null;
+  bool exists(EntityId id) => positions.containsKey(id);
+
+  Iterable<EntityId> get entities => positions.keys;
+
+  void cleanupDead() {
+    final dead = <EntityId>[];
+    health.forEach((id, h) {
+      if (h.isDead) dead.add(id);
+    });
+    for (final id in dead) {
+      despawn(id);
     }
   }
 }
 DART
 
-# ---------- systems: selection ----------
-cat > lib/game/systems/selection_system.dart <<'DART'
-import '../core/world_state.dart';
-import '../math/vec2.dart';
-
-class SelectionSystem {
-  final WorldState world;
-  SelectionSystem(this.world);
-
-  /// Select nearest alive unit within hit radius.
-  void tapSelect(Vec2 p, {double maxDist = 28}) {
-    int? bestId;
-    double bestD2 = maxDist * maxDist;
-
-    for (final u in world.aliveUnits()) {
-      final dx = u.pos.x - p.x;
-      final dy = u.pos.y - p.y;
-      final d2 = dx * dx + dy * dy;
-      if (d2 <= bestD2) {
-        bestD2 = d2;
-        bestId = u.id;
-      }
-    }
-
-    world.selectedUnitId = bestId;
-  }
-
-  /// Move selected unit by setting velocity toward point (very simple).
-  void tapMove(Vec2 p, {double speed = 220}) {
-    final id = world.selectedUnitId;
-    if (id == null) return;
-    final u = world.units[id];
-    if (u == null || !u.isAlive) return;
-
-    final dx = p.x - u.pos.x;
-    final dy = p.y - u.pos.y;
-    final len2 = dx * dx + dy * dy;
-    if (len2 < 1) {
-      u.vel = Vec2(0, 0);
-      return;
-    }
-    final invLen = 1 / (len2).sqrtApprox();
-    u.vel = Vec2(dx * invLen * speed, dy * invLen * speed);
-
-    // clear target if you move
-    u.targetUnitId = null;
-  }
-}
-
-extension _SqrtApprox on double {
-  double sqrtApprox() {
-    // Fast-enough for now: use Dart's sqrt via exponent
-    // (keeps this file dependency-free).
-    return this <= 0 ? 0 : pow05(this);
-  }
-
-  double pow05(double v) => v == 0 ? 0 : v.toString() == 'NaN' ? 0 : _pow(v);
-  double _pow(double v) {
-    // fallback – using double exponent is fine in Dart VM/JIT
-    return v == 0 ? 0 : v ** 0.5;
-  }
-}
-DART
-
-# ---------- systems: movement ----------
-cat > lib/game/systems/movement_system.dart <<'DART'
+cat > lib/game/systems/game_system.dart <<'DART'
 import '../core/world_state.dart';
 
-class MovementSystem {
-  final WorldState world;
-  MovementSystem(this.world);
-
-  void update(double dt) {
-    for (final u in world.aliveUnits()) {
-      u.pos.x += u.vel.x * dt;
-      u.pos.y += u.vel.y * dt;
-
-      // clamp to world bounds
-      if (u.pos.x < 0) u.pos.x = 0;
-      if (u.pos.y < 0) u.pos.y = 0;
-      if (u.pos.x > world.worldW) u.pos.x = world.worldW;
-      if (u.pos.y > world.worldH) u.pos.y = world.worldH;
-    }
-  }
+abstract class GameSystem {
+  void update(WorldState world, double dt);
 }
 DART
 
-# ---------- systems: combat ----------
-cat > lib/game/systems/combat_system.dart <<'DART'
-import '../core/world_state.dart';
-
-class CombatSystem {
-  final WorldState world;
-  CombatSystem(this.world);
-
-  void update(double dt) {
-    // tick cooldowns
-    for (final u in world.aliveUnits()) {
-      if (u.attackTimer > 0) {
-        u.attackTimer -= dt;
-        if (u.attackTimer < 0) u.attackTimer = 0;
-      }
-    }
-
-    // acquire targets (simple: nearest enemy in range)
-    for (final u in world.aliveUnits()) {
-      if (u.targetUnitId != null) {
-        final t = world.units[u.targetUnitId!];
-        if (t == null || !t.isAlive || t.team == u.team) {
-          u.targetUnitId = null;
-        }
-      }
-
-      if (u.targetUnitId == null) {
-        int? bestId;
-        double bestD2 = u.attackRange * u.attackRange;
-
-        for (final other in world.aliveUnits()) {
-          if (other.team == u.team) continue;
-          final dx = other.pos.x - u.pos.x;
-          final dy = other.pos.y - u.pos.y;
-          final d2 = dx * dx + dy * dy;
-          if (d2 <= bestD2) {
-            bestD2 = d2;
-            bestId = other.id;
-          }
-        }
-
-        u.targetUnitId = bestId;
-      }
-    }
-
-    // attack
-    for (final u in world.aliveUnits()) {
-      final tid = u.targetUnitId;
-      if (tid == null) continue;
-      final t = world.units[tid];
-      if (t == null || !t.isAlive) continue;
-
-      final dx = t.pos.x - u.pos.x;
-      final dy = t.pos.y - u.pos.y;
-      final d2 = dx * dx + dy * dy;
-      final r2 = u.attackRange * u.attackRange;
-
-      if (d2 <= r2 && u.attackTimer <= 0) {
-        t.hp -= u.attackDamage;
-        u.attackTimer = u.attackCooldown;
-
-        // if target died, clear target
-        if (!t.isAlive) {
-          u.targetUnitId = null;
-        }
-      }
-    }
-
-    world.cullDead();
-  }
-}
-DART
-
-# ---------- systems: system manager ----------
 cat > lib/game/systems/system_manager.dart <<'DART'
 import '../core/world_state.dart';
+import 'game_system.dart';
 import 'movement_system.dart';
 import 'combat_system.dart';
 
 class SystemManager {
-  final WorldState world;
+  final List<GameSystem> _systems = [
+    MovementSystem(),
+    CombatSystem(),
+  ];
 
-  late final MovementSystem movement;
-  late final CombatSystem combat;
-
-  SystemManager(this.world) {
-    movement = MovementSystem(world);
-    combat = CombatSystem(world);
-  }
-
-  void update(double dt) {
-    movement.update(dt);
-    combat.update(dt);
+  void update(WorldState world, double dt) {
+    for (final s in _systems) {
+      s.update(world, dt);
+    }
+    world.cleanupDead();
   }
 }
 DART
 
-# ---------- core: game loop ----------
+cat > lib/game/systems/movement_system.dart <<'DART'
+import '../core/world_state.dart';
+import '../components/position.dart';
+
+class MovementSystem {
+  // units per second
+  final double speed = 80.0;
+
+  void update(WorldState world, double dt) {
+    for (final id in world.entities) {
+      final order = world.moveOrders[id];
+      final pos = world.positions[id];
+      if (order == null || pos == null) continue;
+
+      final target = order.target;
+      if (target == null) continue;
+
+      final dx = target.x - pos.x;
+      final dy = target.y - pos.y;
+      final distSq = dx * dx + dy * dy;
+      if (distSq < 4) {
+        // arrived
+        order.target = null;
+        continue;
+      }
+
+      final dist = _sqrt(distSq);
+      final step = speed * dt;
+      final nx = dx / dist;
+      final ny = dy / dist;
+      final move = step < dist ? step : dist;
+
+      pos.x += nx * move;
+      pos.y += ny * move;
+    }
+  }
+
+  double _sqrt(double v) {
+    var x = v;
+    for (int i = 0; i < 10; i++) {
+      if (x == 0) return 0;
+      x = 0.5 * (x + v / x);
+    }
+    return x;
+  }
+}
+DART
+
+cat > lib/game/systems/combat_system.dart <<'DART'
+import '../core/world_state.dart';
+
+class CombatSystem {
+  void update(WorldState world, double dt) {
+    // tick cooldowns
+    for (final id in world.entities) {
+      world.attacks[id]?.tick(dt);
+    }
+
+    for (final attacker in world.entities) {
+      final atk = world.attacks[attacker];
+      final atkPos = world.positions[attacker];
+      final atkTeam = world.teams[attacker];
+      final atkOrder = world.targetOrders[attacker];
+
+      if (atk == null || atkPos == null || atkTeam == null || atkOrder == null) continue;
+      if (!atk.ready) continue;
+
+      final targetId = atkOrder.targetId;
+      if (targetId == null) continue;
+      if (!world.exists(targetId)) {
+        atkOrder.targetId = null;
+        continue;
+      }
+
+      final tgtPos = world.positions[targetId];
+      final tgtTeam = world.teams[targetId];
+      final tgtHp = world.health[targetId];
+
+      if (tgtPos == null || tgtTeam == null || tgtHp == null) continue;
+
+      // no friendly fire (for now)
+      if (tgtTeam.id == atkTeam.id) {
+        atkOrder.targetId = null;
+        continue;
+      }
+
+      final dx = tgtPos.x - atkPos.x;
+      final dy = tgtPos.y - atkPos.y;
+      final distSq = dx * dx + dy * dy;
+
+      if (distSq <= atk.range * atk.range) {
+        tgtHp.damage(atk.damage);
+        atk.trigger();
+      }
+    }
+  }
+}
+DART
+
+# Ensure game_loop exists + wired
+mkdir -p lib/game/core
 cat > lib/game/core/game_loop.dart <<'DART'
 import 'world_state.dart';
 import '../systems/system_manager.dart';
 
 class GameLoop {
-  final WorldState world;
-  late final SystemManager systems;
-
-  GameLoop(this.world) {
-    systems = SystemManager(world);
-  }
+  final WorldState world = WorldState();
+  final SystemManager systems = SystemManager();
 
   void update(double dt) {
-    systems.update(dt);
+    systems.update(world, dt);
   }
 }
 DART
 
-echo "✅ Phase 20A files written."
-echo "Next:"
-echo "  git add lib/game phase20a.sh"
-echo "  git commit -m \"Phase 20A: ECS combat + world state\""
-echo "  git push"
+echo "=== Phase 20A complete ==="

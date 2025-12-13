@@ -2,14 +2,10 @@ import 'world_state.dart';
 import '../systems/system_manager.dart';
 
 class GameLoop {
-  final WorldState world;
-  late final SystemManager systems;
-
-  GameLoop(this.world) {
-    systems = SystemManager(world);
-  }
+  final WorldState world = WorldState();
+  final SystemManager systems = SystemManager();
 
   void update(double dt) {
-    systems.update(dt);
+    systems.update(world, dt);
   }
 }

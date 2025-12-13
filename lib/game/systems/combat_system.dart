@@ -1,69 +1,48 @@
 import '../core/world_state.dart';
 
 class CombatSystem {
-  final WorldState world;
-  CombatSystem(this.world);
-
-  void update(double dt) {
+  void update(WorldState world, double dt) {
     // tick cooldowns
-    for (final u in world.aliveUnits()) {
-      if (u.attackTimer > 0) {
-        u.attackTimer -= dt;
-        if (u.attackTimer < 0) u.attackTimer = 0;
-      }
+    for (final id in world.entities) {
+      world.attacks[id]?.tick(dt);
     }
 
-    // acquire targets (simple: nearest enemy in range)
-    for (final u in world.aliveUnits()) {
-      if (u.targetUnitId != null) {
-        final t = world.units[u.targetUnitId!];
-        if (t == null || !t.isAlive || t.team == u.team) {
-          u.targetUnitId = null;
-        }
+    for (final attacker in world.entities) {
+      final atk = world.attacks[attacker];
+      final atkPos = world.positions[attacker];
+      final atkTeam = world.teams[attacker];
+      final atkOrder = world.targetOrders[attacker];
+
+      if (atk == null || atkPos == null || atkTeam == null || atkOrder == null) continue;
+      if (!atk.ready) continue;
+
+      final targetId = atkOrder.targetId;
+      if (targetId == null) continue;
+      if (!world.exists(targetId)) {
+        atkOrder.targetId = null;
+        continue;
       }
 
-      if (u.targetUnitId == null) {
-        int? bestId;
-        double bestD2 = u.attackRange * u.attackRange;
+      final tgtPos = world.positions[targetId];
+      final tgtTeam = world.teams[targetId];
+      final tgtHp = world.health[targetId];
 
-        for (final other in world.aliveUnits()) {
-          if (other.team == u.team) continue;
-          final dx = other.pos.x - u.pos.x;
-          final dy = other.pos.y - u.pos.y;
-          final d2 = dx * dx + dy * dy;
-          if (d2 <= bestD2) {
-            bestD2 = d2;
-            bestId = other.id;
-          }
-        }
+      if (tgtPos == null || tgtTeam == null || tgtHp == null) continue;
 
-        u.targetUnitId = bestId;
+      // no friendly fire (for now)
+      if (tgtTeam.id == atkTeam.id) {
+        atkOrder.targetId = null;
+        continue;
       }
-    }
 
-    // attack
-    for (final u in world.aliveUnits()) {
-      final tid = u.targetUnitId;
-      if (tid == null) continue;
-      final t = world.units[tid];
-      if (t == null || !t.isAlive) continue;
+      final dx = tgtPos.x - atkPos.x;
+      final dy = tgtPos.y - atkPos.y;
+      final distSq = dx * dx + dy * dy;
 
-      final dx = t.pos.x - u.pos.x;
-      final dy = t.pos.y - u.pos.y;
-      final d2 = dx * dx + dy * dy;
-      final r2 = u.attackRange * u.attackRange;
-
-      if (d2 <= r2 && u.attackTimer <= 0) {
-        t.hp -= u.attackDamage;
-        u.attackTimer = u.attackCooldown;
-
-        // if target died, clear target
-        if (!t.isAlive) {
-          u.targetUnitId = null;
-        }
+      if (distSq <= atk.range * atk.range) {
+        tgtHp.damage(atk.damage);
+        atk.trigger();
       }
     }
-
-    world.cullDead();
   }
 }

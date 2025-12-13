@@ -1,28 +1,18 @@
 import '../core/world_state.dart';
+import 'game_system.dart';
 import 'movement_system.dart';
 import 'combat_system.dart';
 
 class SystemManager {
-  final WorldState world;
+  final List<GameSystem> _systems = [
+    MovementSystem(),
+    CombatSystem(),
+  ];
 
-  late final MovementSystem movement;
-  late final CombatSystem combat;
-
-  SystemManager(this.world) {
-    movement = MovementSystem(world);
-    combat = CombatSystem(world);
-  }
-
-  void update(double dt) {
-    movement.update(dt);
-    combat.update(dt);
+  void update(WorldState world, double dt) {
+    for (final s in _systems) {
+      s.update(world, dt);
+    }
+    world.cleanupDead();
   }
 }
-
-  void addCombat(WorldState world) {
-    systems.add(CombatSystem(world));
-  }
-
-  void addCombat(WorldState world) {
-    systems.add(CombatSystem(world));
-  }

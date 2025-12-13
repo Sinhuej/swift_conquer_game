@@ -1,4 +1,3 @@
-import '../core/world_state.dart';
 import 'game_system.dart';
 import 'movement_system.dart';
 import 'combat_system.dart';
@@ -9,10 +8,9 @@ class SystemManager {
     CombatSystem(),
   ];
 
-  void update(WorldState world, double dt) {
-    for (final s in _systems) {
-      s.update(world, dt);
+  void update(double dt) {
+    for (final system in _systems) {
+      system.update(dt);
     }
-    world.cleanupDead();
   }
 }

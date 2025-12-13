@@ -12,7 +12,7 @@ class SwiftConquerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'SwiftConquer',
-      theme: ThemeData.dark(),
+      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blueGrey),
       home: const TestScreen(),
     );
   }

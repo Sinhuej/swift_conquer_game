@@ -1,3 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "=== Phase 21: Flutter skirmish tester UI (no Flame) ==="
+
+mkdir -p lib/screens
+mkdir -p lib/game
+
+cat > lib/screens/test_screen.dart <<'DART'
 import 'dart:async';
 import 'package:flutter/material.dart';
 
@@ -135,3 +144,29 @@ class _TestScreenState extends State<TestScreen> {
     );
   }
 }
+DART
+
+# Make sure main routes to TestScreen
+cat > lib/main.dart <<'DART'
+import 'package:flutter/material.dart';
+import 'screens/test_screen.dart';
+
+void main() {
+  runApp(const SwiftConquerApp());
+}
+
+class SwiftConquerApp extends StatelessWidget {
+  const SwiftConquerApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'SwiftConquer',
+      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blueGrey),
+      home: const TestScreen(),
+    );
+  }
+}
+DART
+
+echo "=== Phase 21 complete ==="

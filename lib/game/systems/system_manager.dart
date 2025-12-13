@@ -18,3 +18,7 @@ class SystemManager {
     combat.update(dt);
   }
 }
+
+  void addCombat(WorldState world) {
+    systems.add(CombatSystem(world));
+  }

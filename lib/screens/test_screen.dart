@@ -54,7 +54,7 @@ class _TestScreenState extends State<TestScreen> {
   }
 
   void tick([double dt = 0.016]) {
-    loop.update(dt);
+    loop.tick(dt);
     setState(() {});
   }
 
@@ -128,7 +128,7 @@ class _TestScreenState extends State<TestScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Text("Entities alive: ${world.entities.length}"),
+            Text("Entities alive: ${world.entityCount}"),
           ],
         ),
       ),

@@ -6,6 +6,6 @@ class GameLoop {
   final SystemManager systems = SystemManager();
 
   void update(double dt) {
-    systems.update(world, dt);
+    systems.update(dt, world);
   }
 }

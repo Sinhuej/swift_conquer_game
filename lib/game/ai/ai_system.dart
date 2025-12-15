@@ -3,7 +3,7 @@ import '../systems/game_system.dart';
 
 class AISystem implements GameSystem {
   @override
-  void update(WorldState world, double dt) {
-    // Placeholder: decision making, scouting, attack waves, etc.
+  void update(double dt, WorldState world) {
+    // Phase 24: AI decisions go here
   }
 }

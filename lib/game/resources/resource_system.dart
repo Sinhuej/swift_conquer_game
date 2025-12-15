@@ -3,7 +3,7 @@ import '../systems/game_system.dart';
 
 class ResourceSystem implements GameSystem {
   @override
-  void update(WorldState world, double dt) {
-    // Placeholder: income ticks, harvesting, storage, etc.
+  void update(double dt, WorldState world) {
+    // Phase 26: income, upkeep, harvesting
   }
 }

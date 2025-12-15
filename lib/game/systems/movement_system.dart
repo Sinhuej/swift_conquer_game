@@ -1,37 +1,25 @@
+import 'game_system.dart';
 import '../core/world_state.dart';
 import '../math/vec2.dart';
-import '../components/move_order.dart';
 import '../components/position.dart';
-import 'game_system.dart';
+import '../components/target_order.dart';
 
-/// Phase 22: MovementSystem (very small + deterministic)
-class MovementSystem implements GameSystem {
-  // tiles/sec (tune later)
-  final double speed = 120.0;
-
+class MovementSystem extends GameSystem {
   @override
-  void update(WorldState world, double dt) {
-    for (final id in world.entities) {
+  void update(double dt, WorldState world) {
+    world.targetOrders.forEach((id, order) {
       final pos = world.positions[id];
-      final order = world.moveOrders[id];
-      if (pos == null || order == null) continue;
+      if (pos == null) return;
 
-      final Vec2 p = pos.value;
-      final Vec2 t = order.target;
-
-      final Vec2 to = t - p;
+      final Vec2 p = pos.vec;
+      final Vec2 to = order.target - p;
       final double dist = to.length;
-      if (dist < 0.5) {
-        // reached target
-        world.moveOrders.remove(id);
-        continue;
-      }
 
-      final Vec2 dir = to.normalized();
-      final double step = speed * dt;
-      final Vec2 next = dist <= step ? t : (p + dir * step);
+      if (dist < 0.01) return;
 
-      world.positions[id] = Position(next);
-    }
+      final Vec2 step = to.normalized() * (dt * 50);
+      pos.x += step.x;
+      pos.y += step.y;
+    });
   }
 }

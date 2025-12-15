@@ -1,9 +1,7 @@
-class DebugOverlayState {
-  int entityCount = 0;
-  double lastDt = 0;
+import '../core/world_state.dart';
 
-  void update({required int entityCount, required double dt}) {
-    this.entityCount = entityCount;
-    lastDt = dt;
+class DebugOverlay {
+  void render(WorldState world) {
+    // Phase 27: FPS, unit count, resources
   }
 }

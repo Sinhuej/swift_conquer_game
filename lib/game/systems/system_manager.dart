@@ -1,19 +1,19 @@
-import '../core/world_state.dart';
 import 'game_system.dart';
-import 'selection_system.dart';
 import 'movement_system.dart';
+import 'selection_system.dart';
 import 'combat_system.dart';
+import '../core/world_state.dart';
 
 class SystemManager {
-  final List<GameSystem> _systems = <GameSystem>[
-    SelectionSystem(),
+  final List<GameSystem> _systems = [
     MovementSystem(),
+    SelectionSystem(),
     CombatSystem(),
   ];
 
-  void update(WorldState world, double dt) {
+  void update(double dt, WorldState world) {
     for (final s in _systems) {
-      s.update(world, dt);
+      s.update(dt, world);
     }
   }
 }

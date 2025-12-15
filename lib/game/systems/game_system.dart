@@ -1,5 +1,6 @@
 import '../core/world_state.dart';
 
 abstract class GameSystem {
-  void update(double dt, WorldState world);
+  /// All systems update against the same WorldState.
+  void update(WorldState world, double dt);
 }

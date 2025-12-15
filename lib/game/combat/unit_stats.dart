@@ -1,15 +1,11 @@
 class UnitStats {
-  final int hp;
-  final int attack;
-  final int defense;
-  final double attackSpeed; // attacks per second
-  final double range;
+  final double attack;
+  final double armor;
+  final double cooldown;
 
-  const UnitStats({
-    required this.hp,
+  UnitStats({
     required this.attack,
-    required this.defense,
-    required this.attackSpeed,
-    required this.range,
+    required this.armor,
+    required this.cooldown,
   });
 }

@@ -1,8 +1,9 @@
 import 'game_system.dart';
+import '../core/world_state.dart';
 
-class MovementSystem implements GameSystem {
+class MovementSystem extends GameSystem {
   @override
-  void update(double dt) {
-    // Phase 20 movement logic placeholder
+  void update(double dt, WorldState world) {
+    // Phase 20 movement placeholder
   }
 }

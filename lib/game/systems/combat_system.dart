@@ -1,8 +1,9 @@
 import 'game_system.dart';
+import '../core/world_state.dart';
 
-class CombatSystem implements GameSystem {
+class CombatSystem extends GameSystem {
   @override
-  void update(double dt) {
-    // Phase 20 combat resolution placeholder
+  void update(double dt, WorldState world) {
+    // Phase 20 combat placeholder
   }
 }

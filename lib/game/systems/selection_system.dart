@@ -1,15 +1,9 @@
-import '../core/entity_id.dart';
+import 'game_system.dart';
 import '../core/world_state.dart';
 
-class SelectionSystem {
-  EntityId? selected;
-
-  void select(WorldState world, EntityId? id) {
-    if (id == null) {
-      selected = null;
-      return;
-    }
-    if (!world.exists(id)) return;
-    selected = id;
+class SelectionSystem extends GameSystem {
+  @override
+  void update(double dt, WorldState world) {
+    // Phase 20 selection placeholder
   }
 }

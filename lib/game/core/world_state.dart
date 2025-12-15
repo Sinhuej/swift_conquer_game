@@ -1,30 +1,27 @@
 import '../components/position.dart';
 import '../components/health.dart';
+import '../components/team.dart';
+import '../components/move_order.dart';
 import '../components/target_order.dart';
-import '../models/entity_id.dart';
-import '../math/vec2.dart';
 
 class WorldState {
   int _nextId = 0;
 
-  final Map<EntityId, Position> positions = {};
-  final Map<EntityId, Health> healths = {};
-  final Map<EntityId, TargetOrder> targetOrders = {};
+  final Map<int, Position> positions = {};
+  final Map<int, Health> health = {};
+  final Map<int, Team> teams = {};
+  final Map<int, MoveOrder> moveOrders = {};
+  final Map<int, TargetOrder> targetOrders = {};
 
-  EntityId spawnUnit(Vec2 at) {
-    final id = EntityId(_nextId++);
-    positions[id] = Position(at.x, at.y);
-    healths[id] = Health(100);
+  int spawnUnit() {
+    final id = _nextId++;
+    positions[id] = Position(0, 0);
+    health[id] = Health(100);
+    teams[id] = Team(0);
     return id;
   }
 
-  bool exists(EntityId id) {
-    return positions.containsKey(id);
-  }
+  bool exists(int id) => positions.containsKey(id);
 
-  void remove(EntityId id) {
-    positions.remove(id);
-    healths.remove(id);
-    targetOrders.remove(id);
-  }
+  int get entityCount => positions.length;
 }

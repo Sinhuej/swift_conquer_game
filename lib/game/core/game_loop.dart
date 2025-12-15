@@ -1,5 +1,5 @@
-import 'world_state.dart';
 import '../systems/system_manager.dart';
+import 'world_state.dart';
 
 class GameLoop {
   final WorldState world = WorldState();

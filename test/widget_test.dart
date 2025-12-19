@@ -1,3 +1,7 @@
+import 'package:flutter_test/flutter_test.dart';
+
 void main() {
-  // Intentionally empty for Phase 15
+  test('placeholder', () {
+    expect(true, true);
+  });
 }

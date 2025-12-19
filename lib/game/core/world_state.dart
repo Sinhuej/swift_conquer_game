@@ -9,8 +9,7 @@ import 'entity_id.dart';
 class WorldState {
   int _nextId = 1;
 
-  final Set<EntityId> entities = <EntityId>{};
-
+  final Set<EntityId> entities = {};
   final Map<EntityId, Position> positions = {};
   final Map<EntityId, Health> health = {};
   final Map<EntityId, Team> teams = {};
@@ -18,10 +17,9 @@ class WorldState {
   final Map<EntityId, TargetOrder> targetOrders = {};
 
   int get entityCount => entities.length;
-
   bool exists(EntityId id) => entities.contains(id);
 
-  EntityId spawnUnit(Vec2 start, {int teamId = 1, int hp = 25}) {
+  EntityId spawnUnit(Vec2 start, {int teamId = 1, int hp = 20}) {
     final id = EntityId(_nextId++);
     entities.add(id);
     positions[id] = Position(start);

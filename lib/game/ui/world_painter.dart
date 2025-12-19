@@ -1,22 +1,43 @@
 import 'package:flutter/material.dart';
 import '../core/world_state.dart';
+import '../core/entity_id.dart';
 
 class WorldPainter extends CustomPainter {
   final WorldState world;
-  final dynamic cam;       // keep dynamic for now (Phase 80+ tighten)
-  final Set<dynamic> selected;
+  final dynamic cam;
+  final EntityId? selected;
 
   WorldPainter({
     required this.world,
-    required this.cam,
-    required this.selected,
+    this.cam,
+    this.selected,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // TEMP: minimal safe render so build stays GREEN
-    final paint = Paint()..color = const Color(0xFF1E1E1E);
+    final paint = Paint()..color = const Color(0xFF2A3440);
+
+    // background
     canvas.drawRect(Offset.zero & size, paint);
+
+    // draw units
+    for (final id in world.entities) {
+      final pos = world.positions[id]?.value;
+      if (pos == null) continue;
+
+      final isSelected = (id == selected);
+
+      final unitPaint = Paint()
+        ..color = isSelected
+            ? const Color(0xFF42D392)
+            : const Color(0xFF9DA5B4);
+
+      canvas.drawCircle(
+        Offset(pos.x, pos.y),
+        isSelected ? 8 : 6,
+        unitPaint,
+      );
+    }
   }
 
   @override

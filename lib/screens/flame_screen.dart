@@ -1,5 +1,5 @@
-import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:flame/game.dart';
 import '../game/core/game_loop.dart';
 import '../game/flame/swiftconquer_flame_game.dart';
 
@@ -12,7 +12,6 @@ class FlameScreen extends StatelessWidget {
     final game = SwiftConquerFlameGame(loop: loop);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("SwiftConquer • Flame")),
       body: GameWidget(game: game),
     );
   }

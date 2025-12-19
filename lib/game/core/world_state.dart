@@ -18,19 +18,17 @@ class WorldState {
   final Map<EntityId, TargetOrder> targetOrders = {};
 
   int get entityCount => entities.length;
+
   bool exists(EntityId id) => entities.contains(id);
 
   EntityId spawnUnit(Vec2 start, {int teamId = 1, int hp = 25}) {
     final id = EntityId(_nextId++);
     entities.add(id);
-
     positions[id] = Position(start);
     health[id] = Health(current: hp, max: hp);
     teams[id] = Team(teamId);
-
     moveOrders[id] = MoveOrder();
     targetOrders[id] = TargetOrder();
-
     return id;
   }
 

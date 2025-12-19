@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 class Vec2 {
   final double x;
   final double y;
@@ -8,7 +10,7 @@ class Vec2 {
   Vec2 operator -(Vec2 o) => Vec2(x - o.x, y - o.y);
   Vec2 operator *(double s) => Vec2(x * s, y * s);
 
-  double get length => _sqrt(x * x + y * y);
+  double get length => math.sqrt(x * x + y * y);
 
   Vec2 normalized() {
     final len = length;
@@ -16,13 +18,5 @@ class Vec2 {
     return Vec2(x / len, y / len);
   }
 
-  static double _sqrt(double v) {
-    if (v <= 0) return 0;
-    // Newton-Raphson
-    double x = v;
-    for (int i = 0; i < 12; i++) {
-      x = 0.5 * (x + v / x);
-    }
-    return x;
-  }
+  double distanceTo(Vec2 o) => (this - o).length;
 }

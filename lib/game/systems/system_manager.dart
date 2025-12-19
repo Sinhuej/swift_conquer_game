@@ -5,8 +5,10 @@ import 'movement_system.dart';
 import 'selection_system.dart';
 
 class SystemManager {
-  final List<GameSystem> _systems = [
-    SelectionSystem(),
+  final selection = SelectionSystem();
+
+  late final List<GameSystem> _systems = [
+    selection,
     MovementSystem(),
     CombatSystem(),
   ];

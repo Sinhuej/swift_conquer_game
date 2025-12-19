@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'screens/test_screen.dart';
+import 'package:flame/game.dart';
+
+import 'game/flame/swiftconquer_flame_game.dart';
 
 void main() {
   runApp(const SwiftConquerApp());
@@ -11,9 +13,8 @@ class SwiftConquerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SwiftConquer',
-      theme: ThemeData.dark(useMaterial3: true),
-      home: const TestScreen(),
+      debugShowCheckedModeBanner: false,
+      home: GameWidget(game: SwiftConquerFlameGame()),
     );
   }
 }

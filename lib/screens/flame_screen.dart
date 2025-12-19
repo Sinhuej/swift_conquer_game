@@ -5,11 +5,14 @@ class FlameScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('SwiftConquer'),
+      ),
+      body: const Center(
         child: Text(
-          'SwiftConquer\nHeadless Core Active',
-          textAlign: TextAlign.center,
+          'SwiftConquer Core Engine Running',
+          style: TextStyle(fontSize: 18),
         ),
       ),
     );

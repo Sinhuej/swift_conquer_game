@@ -1,20 +1,10 @@
-import '../core/entity_id.dart';
-import '../math/vec2.dart';
-
-abstract class GameCommand {}
-
-class MoveCommand extends GameCommand {
-  final EntityId id;
-  final Vec2 target;
-  MoveCommand(this.id, this.target);
-}
+import 'attack_command.dart';
+import 'stop_command.dart';
 
 class CommandQueue {
-  final List<GameCommand> _queue = [];
-  void push(GameCommand c) => _queue.add(c);
-  List<GameCommand> drain() {
-    final out = List<GameCommand>.from(_queue);
-    _queue.clear();
-    return out;
-  }
+  final List<dynamic> _queue = [];
+
+  void push(dynamic cmd) => _queue.add(cmd);
+  bool get isEmpty => _queue.isEmpty;
+  dynamic pop() => _queue.removeAt(0);
 }

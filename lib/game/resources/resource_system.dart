@@ -1,9 +1,11 @@
 import '../core/world_state.dart';
-import '../systems/game_system.dart';
 
-class ResourceSystem implements GameSystem {
-  @override
-  void update(double dt, WorldState world) {
-    // Phase 26: income, upkeep, harvesting
+class ResourceSystem {
+  final Map<int, int> teamResources = {};
+
+  void tick(WorldState world) {
+    for (final team in world.teams.values) {
+      teamResources[team.id] = (teamResources[team.id] ?? 0) + 1;
+    }
   }
 }

@@ -1,104 +1,75 @@
 import 'dart:ui';
-import 'package:flutter/material.dart';
-
+import 'package:flutter/material.dart' show Colors;
 import '../core/world_state.dart';
 import '../core/entity_id.dart';
-import '../math/vec2.dart';
-import 'camera.dart';
+
+/// Minimal camera placeholder so we compile even if cam is a simple object.
+/// If you already have a real Camera class elsewhere, delete this and import yours.
+class CameraView {
+  final double ox;
+  final double oy;
+  final double zoom;
+  const CameraView({this.ox = 0, this.oy = 0, this.zoom = 1});
+}
 
 class WorldPainter extends CustomPainter {
   final WorldState world;
-  final Camera cam;
+  final CameraView cam;
   final Set<EntityId> selected;
 
-  WorldPainter({required this.world, required this.cam, required this.selected});
+  WorldPainter({
+    required this.world,
+    required this.cam,
+    required this.selected,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     // Background
-    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFF0B1220));
+    final bg = Paint()..color = const Color(0xFF0B1220);
+    canvas.drawRect(Offset.zero & size, bg);
 
-    _drawGrid(canvas, size);
-    _drawUnits(canvas);
-    _drawHud(canvas, size);
-  }
-
-  void _drawGrid(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = const Color(0xFF1B2433)
-      ..strokeWidth = 1;
-
-    const step = 40.0;
-    for (double x = 0; x <= size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), p);
-    }
-    for (double y = 0; y <= size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), p);
-    }
-  }
-
-  void _drawUnits(Canvas canvas) {
+    // Draw units as simple circles + HP bars
     for (final id in world.entities) {
-      final pos = world.positions[id]?.value;
+      final posComp = world.positions[id];
       final hp = world.health[id];
-      final team = world.teams[id]?.id ?? 0;
-      if (pos == null || hp == null) continue;
+      if (posComp == null || hp == null) continue;
 
-      final s = cam.worldToScreen(pos);
-      final center = Offset(s.x, s.y);
+      final pos = posComp.value;
+      final isSel = selected.contains(id);
 
-      final radius = 14.0;
+      final x = (pos.x + cam.ox) * cam.zoom;
+      final y = (pos.y + cam.oy) * cam.zoom;
 
-      // team color
-      final fill = Paint()
-        ..color = (team == 1) ? const Color(0xFF42D392) : const Color(0xFFE35D6A);
+      // Unit body
+      final body = Paint()..color = isSel ? const Color(0xFF42D392) : const Color(0xFF93C5FD);
+      canvas.drawCircle(Offset(x, y), 10 * cam.zoom, body);
 
-      // outline
-      final outline = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = selected.contains(id) ? 4 : 2
-        ..color = selected.contains(id) ? const Color(0xFFFFD166) : const Color(0xFF94A3B8);
+      // HP bar
+      final barW = 38.0 * cam.zoom;
+      final barH = 6.0 * cam.zoom;
+      final topLeft = Offset(x - barW / 2, y - 18 * cam.zoom);
 
-      canvas.drawCircle(center, radius, fill);
-      canvas.drawCircle(center, radius, outline);
+      final back = Paint()..color = const Color(0xFF2A3440);
+      final fill = Paint()..color = const Color(0xFF42D392);
 
-      // HP bar (FIX: no invalid const Size(barW, barH))
-      final barW = 40.0;
-      final barH = 6.0;
-      final topLeft = Offset(center.dx - barW / 2, center.dy - radius - 14);
+      // IMPORTANT: Size(...) must NOT be const because barW/barH are variables
+      canvas.drawRect(topLeft & Size(barW, barH), back);
 
-      final frac = (hp.max == 0) ? 0.0 : (hp.current / hp.max).clamp(0.0, 1.0);
-
-      canvas.drawRect(
-        topLeft & Size(barW, barH),
-        Paint()..color = const Color(0xFF2A3440),
-      );
-      canvas.drawRect(
-        topLeft & Size(barW * frac, barH),
-        Paint()..color = const Color(0xFF42D392),
-      );
+      final frac = (hp.max <= 0) ? 0.0 : (hp.current / hp.max).clamp(0.0, 1.0);
+      canvas.drawRect(topLeft & Size(barW * frac, barH), fill);
     }
-  }
 
-  void _drawHud(Canvas canvas, Size size) {
-    final text = "Entities: ${world.entityCount}  |  Selected: ${selected.length}  |  Zoom: ${cam.zoom.toStringAsFixed(2)}";
-    final tp = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: const TextStyle(fontSize: 14, color: Color(0xFFE6EDF3)),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: size.width - 24);
-
-    tp.paint(canvas, const Offset(12, 12));
+    // HUD text (simple)
+    final paragraphStyle = ParagraphStyle(fontSize: 14);
+    final textStyle = TextStyle(color: const Color(0xFFE6EDF3));
+    final pb = ParagraphBuilder(paragraphStyle)..pushStyle(textStyle)..addText("Units: ${world.entityCount}");
+    final p = pb.build()..layout(const ParagraphConstraints(width: 300));
+    canvas.drawParagraph(p, const Offset(12, 10));
   }
 
   @override
   bool shouldRepaint(covariant WorldPainter oldDelegate) {
-    return true; // simplest for now
+    return true;
   }
-}
-
-extension _Clamp on double {
-  double clamp(double lo, double hi) => this < lo ? lo : (this > hi ? hi : this);
 }

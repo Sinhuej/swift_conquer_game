@@ -1,9 +1,9 @@
-import 'game_system.dart';
 import '../core/world_state.dart';
+import 'game_system.dart';
 
-class SelectionSystem extends GameSystem {
+class SelectionSystem implements GameSystem {
   @override
   void update(double dt, WorldState world) {
-    // Phase GREEN placeholder
+    // placeholder: selection state later
   }
 }

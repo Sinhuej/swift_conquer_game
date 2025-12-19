@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-
 import '../game/core/game_loop.dart';
-import '../game/core/commands.dart';
-import '../game/components/position.dart';
+import '../game/core/entity_id.dart';
+import '../game/math/vec2.dart';
 
 class TestScreen extends StatefulWidget {
   const TestScreen({super.key});
@@ -13,124 +12,80 @@ class TestScreen extends StatefulWidget {
 }
 
 class _TestScreenState extends State<TestScreen> {
-  final loop = GameLoop();
-  late final Commands cmd;
+  final GameLoop loop = GameLoop();
+  Timer? _timer;
 
-  int? a;
-  int? b;
-
-  Timer? timer;
-  bool running = false;
+  EntityId? a;
+  EntityId? b;
 
   @override
   void initState() {
     super.initState();
-    cmd = Commands(loop.world);
+    final world = loop.world;
 
-    // Spawn 2 units on different teams.
-    a = loop.world.spawnUnit(
-      x: 120, y: 260,
-      teamId: 1,
-      hp: 120,
-      damage: 10,
-      range: 90,
-      cooldown: 0.5,
-    );
+    a = world.spawnUnit(const Vec2(120, 260), teamId: 1, hp: 25);
+    b = world.spawnUnit(const Vec2(320, 260), teamId: 2, hp: 25);
 
-    b = loop.world.spawnUnit(
-      x: 320, y: 260,
-      teamId: 2,
-      hp: 140,
-      damage: 8,
-      range: 90,
-      cooldown: 0.6,
-    );
+    // proof of life: move A to the right
+    world.moveOrders[a!]!.target = const Vec2(520, 260);
+
+    _timer = Timer.periodic(const Duration(milliseconds: 16), (_) {
+      loop.tick(1 / 60);
+      setState(() {});
+    });
   }
 
   @override
   void dispose() {
-    timer?.cancel();
+    _timer?.cancel();
     super.dispose();
-  }
-
-  void tick([double dt = 0.016]) {
-    loop.tick(dt);
-    setState(() {});
-  }
-
-  void toggleRun() {
-    running = !running;
-    timer?.cancel();
-    if (running) {
-      timer = Timer.periodic(const Duration(milliseconds: 16), (_) => tick(0.016));
-    }
-    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     final world = loop.world;
 
-    Widget unitCard(int? id, String label) {
-      if (id == null || !world.exists(id)) {
-        return Card(child: ListTile(title: Text("$label: dead/none")));
-      }
-      final p = world.positions[id]!;
+    Widget unitCard(EntityId id) {
+      final pos = world.positions[id]!.value;
       final hp = world.health[id]!;
       final team = world.teams[id]!.id;
       final tgt = world.targetOrders[id]?.targetId;
 
       return Card(
         child: ListTile(
-          title: Text("$label (Team $team)"),
-          subtitle: Text("HP ${hp.hp}/${hp.maxHp}  |  Pos (${p.x.toStringAsFixed(1)}, ${p.y.toStringAsFixed(1)})  |  Target ${tgt ?? '-'}"),
+          title: Text("Unit ${id.value} (Team $team)"),
+          subtitle: Text(
+            "HP ${hp.current}/${hp.max} | Pos (${pos.x.toStringAsFixed(1)}, ${pos.y.toStringAsFixed(1)}) | Target ${tgt?.value ?? '-'}",
+          ),
         ),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("SwiftConquer • Skirmish Test (Phase 21)")),
-      body: Padding(
+      appBar: AppBar(title: const Text("SwiftConquer • GREEN LOCK")),
+      body: ListView(
         padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            unitCard(a, "Unit A"),
-            unitCard(b, "Unit B"),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ElevatedButton(
-                  onPressed: () => tick(0.1),
-                  child: const Text("Tick +0.1s"),
-                ),
-                ElevatedButton(
-                  onPressed: toggleRun,
-                  child: Text(running ? "Stop" : "Run"),
-                ),
-                ElevatedButton(
-                  onPressed: (a != null) ? () => cmd.issueMove(a!, Position(220, 260)) : null,
-                  child: const Text("Move A → mid"),
-                ),
-                ElevatedButton(
-                  onPressed: (b != null) ? () => cmd.issueMove(b!, Position(220, 260)) : null,
-                  child: const Text("Move B → mid"),
-                ),
-                ElevatedButton(
-                  onPressed: (a != null && b != null) ? () => cmd.issueAttack(a!, b!) : null,
-                  child: const Text("A attacks B"),
-                ),
-                ElevatedButton(
-                  onPressed: (a != null && b != null) ? () => cmd.issueAttack(b!, a!) : null,
-                  child: const Text("B attacks A"),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text("Entities alive: ${world.entityCount}"),
-          ],
-        ),
+        children: [
+          Text("Entities alive: ${world.entityCount}"),
+          const SizedBox(height: 10),
+          if (a != null && world.exists(a!)) unitCard(a!),
+          if (b != null && world.exists(b!)) unitCard(b!),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () {
+              if (a == null || !world.exists(a!)) return;
+              world.moveOrders[a!]!.target = const Vec2(520, 140);
+            },
+            child: const Text("Move Unit A"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (b == null || !world.exists(b!)) return;
+              world.health[b!]!.current = 0; // prove combat cleanup
+            },
+            child: const Text("Kill Unit B"),
+          ),
+        ],
       ),
     );
   }

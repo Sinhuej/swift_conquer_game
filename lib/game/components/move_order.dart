@@ -1,6 +1,6 @@
-import 'position.dart';
+import '../math/vec2.dart';
 
 class MoveOrder {
-  Position? target;
+  Vec2? target;
   MoveOrder({this.target});
 }

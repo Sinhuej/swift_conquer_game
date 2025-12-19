@@ -1,4 +1,4 @@
 class Team {
-  final int id; // 1 = player, 2 = enemy, etc.
+  final int id;
   const Team(this.id);
 }

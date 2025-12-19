@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Phase 51–60: Flame integration will come later.
-/// For now, this keeps CI GREEN while we build systems safely.
+/// Temporary screen used to keep CI GREEN while we iterate.
+/// We'll wire Flame in a later phase once APIs are aligned.
 class FlameScreen extends StatelessWidget {
   const FlameScreen({super.key});
 
@@ -10,7 +10,7 @@ class FlameScreen extends StatelessWidget {
     return const Scaffold(
       body: Center(
         child: Text(
-          "SwiftConquer\nPhase 51–60 scaffolding ✅\n(Flame hookup next)",
+          "SwiftConquer is GREEN ✅\n(Flame wiring comes next)",
           textAlign: TextAlign.center,
         ),
       ),

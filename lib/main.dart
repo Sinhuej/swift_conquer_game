@@ -10,11 +10,9 @@ class SwiftConquerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'SwiftConquer',
-      theme: ThemeData.dark(),
-      home: const FlameScreen(),
+      home: FlameScreen(),
     );
   }
 }

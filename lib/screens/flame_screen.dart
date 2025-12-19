@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 
+/// Phase 51–60: Flame integration will come later.
+/// For now, this keeps CI GREEN while we build systems safely.
 class FlameScreen extends StatelessWidget {
   const FlameScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('SwiftConquer'),
-      ),
-      body: const Center(
+    return const Scaffold(
+      body: Center(
         child: Text(
-          'SwiftConquer Core Engine Running',
-          style: TextStyle(fontSize: 18),
+          "SwiftConquer\nPhase 51–60 scaffolding ✅\n(Flame hookup next)",
+          textAlign: TextAlign.center,
         ),
       ),
     );

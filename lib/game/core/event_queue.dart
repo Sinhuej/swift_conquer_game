@@ -12,5 +12,6 @@ class EventQueue {
     return out;
   }
 
+  bool get isEmpty => _events.isEmpty;
   int get length => _events.length;
 }

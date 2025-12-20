@@ -1,21 +1,20 @@
 class FixedTimestep {
-  final double step;
-  double _accum = 0.0;
+  final double step; // e.g. 1/60
+  double _accum = 0;
 
-  FixedTimestep({this.step = 1.0 / 60.0});
+  FixedTimestep({this.step = 1 / 60});
 
-  /// Returns how many fixed steps to run this frame.
+  /// Add frame dt, returns how many fixed updates to run.
   int accumulate(double dt) {
     if (dt <= 0) return 0;
     _accum += dt;
-
     int n = 0;
-    while (_accum >= step && n < 8) { // safety clamp
+    while (_accum >= step && n < 10) { // clamp to avoid spiral
       _accum -= step;
       n++;
     }
     return n;
   }
 
-  void reset() => _accum = 0.0;
+  double get accumulator => _accum;
 }

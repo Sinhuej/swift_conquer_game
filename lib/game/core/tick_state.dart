@@ -1,9 +1,9 @@
 class TickState {
-  int tick = 0;
-  double simTime = 0.0;
+  int tick;
+  double simTimeSeconds;
 
-  void advance(double dt) {
-    tick += 1;
-    simTime += dt;
-  }
+  TickState({this.tick = 0, this.simTimeSeconds = 0});
+
+  @override
+  String toString() => 'TickState(tick=$tick, t=$simTimeSeconds)';
 }

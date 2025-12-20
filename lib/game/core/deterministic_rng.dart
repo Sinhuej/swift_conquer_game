@@ -1,20 +1,24 @@
 class DeterministicRng {
   int _state;
 
-  DeterministicRng(int seed) : _state = seed == 0 ? 1 : seed;
+  DeterministicRng({int seed = 1}) : _state = (seed == 0 ? 1 : seed);
 
-  /// Simple LCG: deterministic across platforms.
-  int nextInt() {
-    _state = (1103515245 * _state + 12345) & 0x7fffffff;
-    return _state;
+  /// xorshift32
+  int nextUint32() {
+    int x = _state;
+    x ^= (x << 13);
+    x ^= (x >> 17);
+    x ^= (x << 5);
+    _state = x;
+    return x & 0xFFFFFFFF;
   }
 
-  /// 0.0 <= value < 1.0
-  double nextDouble() => nextInt() / 2147483648.0;
+  double nextDouble() => nextUint32() / 0xFFFFFFFF;
 
-  int rangeInt(int min, int maxExclusive) {
-    if (maxExclusive <= min) return min;
-    final span = maxExclusive - min;
-    return min + (nextInt() % span);
+  int nextInt(int maxExclusive) {
+    if (maxExclusive <= 0) return 0;
+    return nextUint32() % maxExclusive;
   }
+
+  int get seed => _state;
 }

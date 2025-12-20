@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../game/core/game_loop.dart';
+import '../game/core/entity_id.dart';
 import '../game/math/vec2.dart';
 
 class TestScreen extends StatefulWidget {
@@ -13,20 +14,24 @@ class TestScreen extends StatefulWidget {
 class _TestScreenState extends State<TestScreen> {
   final GameLoop loop = GameLoop();
   Timer? _timer;
-  int ticks = 0;
+
+  EntityId? a;
+  EntityId? b;
 
   @override
   void initState() {
     super.initState();
 
     final world = loop.world;
-    world.spawnUnit(const Vec2(100, 100));
-    world.spawnUnit(const Vec2(300, 100));
+    a = world.spawnUnit(const Vec2(120, 260), teamId: 1, hp: 25);
+    b = world.spawnUnit(const Vec2(320, 260), teamId: 2, hp: 25);
+
+    // prove movement ticks:
+    world.moveOrders[a!]!.target = const Vec2(520, 260);
 
     _timer = Timer.periodic(const Duration(milliseconds: 16), (_) {
       loop.tick(1 / 60);
-      ticks++;
-      if (ticks % 60 == 0) setState(() {});
+      setState(() {});
     });
   }
 
@@ -36,15 +41,54 @@ class _TestScreenState extends State<TestScreen> {
     super.dispose();
   }
 
+  Widget _unitCard(EntityId id) {
+    final world = loop.world;
+    final pos = world.positions[id]!.value;
+    final hp = world.health[id]!;
+    final team = world.teams[id]!.id;
+    final tgt = world.targetOrders[id]?.targetId;
+
+    return Card(
+      child: ListTile(
+        title: Text("Unit ${id.value} (Team $team)"),
+        subtitle: Text(
+          "HP ${hp.current}/${hp.max}  |  Pos (${pos.x.toStringAsFixed(1)}, ${pos.y.toStringAsFixed(1)})"
+          "  |  Target ${tgt?.value ?? '-'}",
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final world = loop.world;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('SwiftConquer – Headless Sim')),
-      body: Center(
-        child: Text(
-          'Entities: ${loop.world.entityCount}\nTicks: $ticks',
-          textAlign: TextAlign.center,
-        ),
+      appBar: AppBar(title: const Text("SwiftConquer • Phase 32–40")),
+      body: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          Text("Entities alive: ${world.entityCount}"),
+          const SizedBox(height: 10),
+          if (a != null && world.exists(a!)) _unitCard(a!),
+          if (b != null && world.exists(b!)) _unitCard(b!),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () {
+              if (a == null || !world.exists(a!)) return;
+              world.moveOrders[a!]!.target = const Vec2(520, 140);
+            },
+            child: const Text("Move Unit A"),
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () {
+              if (b == null || !world.exists(b!)) return;
+              world.health[b!]!.current = 0; // prove despawn
+            },
+            child: const Text("Kill Unit B"),
+          ),
+        ],
       ),
     );
   }

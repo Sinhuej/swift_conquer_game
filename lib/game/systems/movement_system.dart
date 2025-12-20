@@ -3,29 +3,30 @@ import '../math/vec2.dart';
 import 'game_system.dart';
 
 class MovementSystem implements GameSystem {
+  static const double speed = 120.0; // units/sec
+
   @override
   void update(double dt, WorldState world) {
     for (final id in world.entities) {
       final pos = world.positions[id];
       final order = world.moveOrders[id];
-      if (pos == null || order?.target == null) continue;
+      if (pos == null || order == null) continue;
+
+      final target = order.target;
+      if (target == null) continue;
 
       final Vec2 p = pos.value;
-      final Vec2 t = order!.target!;
-      final Vec2 to = t - p;
+      final Vec2 delta = target - p;
 
-      final dist = to.length;
-      if (dist < 1) {
+      final dist = delta.length;
+      if (dist < 1.0) {
         order.target = null;
         continue;
       }
 
-      const speed = 100.0;
       final step = speed * dt;
-      final next = (step >= dist)
-          ? t
-          : p + to.normalized() * step;
-
+      final dir = delta.normalized();
+      final next = (step >= dist) ? target : (p + dir * step);
       pos.value = next;
     }
   }

@@ -9,6 +9,15 @@ import 'entity_id.dart';
 class WorldState {
   int _nextId = 1;
 
+  // Save/load support (Phase 77–78). Inert unless used.
+  int get nextIdForSave => _nextId;
+  void setNextIdForSave(int value) {
+    if (value < 1) {
+      throw ArgumentError('nextId must be >= 1');
+    }
+    _nextId = value;
+  }
+
   final Set<EntityId> entities = <EntityId>{};
 
   final Map<EntityId, Position> positions = {};

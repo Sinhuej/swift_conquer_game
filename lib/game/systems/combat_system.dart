@@ -1,18 +1,24 @@
 import '../core/world_state.dart';
-import 'game_system.dart';
+import '../core/attack_event.dart';
+import '../systems/game_system.dart';
 
 class CombatSystem implements GameSystem {
+  final List<AttackEvent> _queue = [];
+
+  void queue(AttackEvent e) => _queue.add(e);
+
   @override
   void update(double dt, WorldState world) {
-    // Placeholder: Phase 40+ real combat
-    // For now: delete dead entities
-    final dead = <dynamic>[];
-    for (final id in world.entities) {
-      final hp = world.health[id];
-      if (hp != null && hp.current <= 0) dead.add(id);
+    if (_queue.isEmpty) return;
+
+    for (final e in _queue) {
+      if (!world.exists(e.target)) continue;
+      final hp = world.health[e.target];
+      if (hp == null) continue;
+
+      hp.current -= e.damage;
     }
-    for (final id in dead) {
-      world.destroy(id);
-    }
+
+    _queue.clear();
   }
 }

@@ -1,6 +1,13 @@
-class AttackEvent {
-  final int targetId;
-  final double damage;
+import 'entity_id.dart';
 
-  AttackEvent(this.targetId, this.damage);
+class AttackEvent {
+  final EntityId attacker;
+  final EntityId target;
+  final int damage;
+
+  AttackEvent({
+    required this.attacker,
+    required this.target,
+    required this.damage,
+  });
 }

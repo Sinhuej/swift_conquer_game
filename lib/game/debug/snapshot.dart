@@ -1,15 +1,12 @@
 import '../core/world_state.dart';
 
 class Snapshot {
-  final int tick;
-  final int entityCount;
-
-  Snapshot({required this.tick, required this.entityCount});
-
-  static Snapshot from(WorldState world, int tick) {
-    return Snapshot(tick: tick, entityCount: world.entityCount);
+  static Map<String, dynamic> dump(WorldState world) {
+    return {
+      'entities': world.entityCount,
+      'positions': world.positions.length,
+      'health': world.health.length,
+      'teams': world.teams.length,
+    };
   }
-
-  @override
-  String toString() => 'Snapshot(tick=$tick, entities=$entityCount)';
 }

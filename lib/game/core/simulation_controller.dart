@@ -7,6 +7,7 @@ import 'tick_state.dart';
 import 'world_state.dart';
 
 import 'package:swift_conquer_game/sim_ext/observability/sim_inspector.dart';
+import 'package:swift_conquer_game/sim_ext/safety/perf_guards.dart';
 
 class SimulationController {
   final WorldState world;
@@ -33,13 +34,26 @@ class SimulationController {
   void step(
     double frameDtSeconds, {
     SimInspector? inspector,
+    PerfGuards? perf,
+    int? nowMs,
   }) {
     if (paused) return;
     final dt = frameDtSeconds * timeScale;
     final n = fixed.accumulate(dt);
 
+    if (perf != null) {
+      if (nowMs == null) {
+        throw ArgumentError('nowMs required when perf guards enabled');
+      }
+      perf.start(nowMs);
+    }
+
     for (int i = 0; i < n; i++) {
       _tickOnce(inspector: inspector);
+
+      if (perf != null) {
+        perf.check(tick: state.tick, nowMs: nowMs!);
+      }
     }
   }
 
@@ -51,9 +65,7 @@ class SimulationController {
       state.tick,
       'SIM',
       'TICK',
-      payload: {
-        'simTimeSeconds': state.simTimeSeconds,
-      },
+      payload: {'simTimeSeconds': state.simTimeSeconds},
     );
 
     systems.update(fixed.step, world);

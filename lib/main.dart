@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/game_screen.dart';
+import 'screens/test_screen.dart';
 
 void main() {
   runApp(const SwiftConquerApp());
@@ -14,7 +14,7 @@ class SwiftConquerApp extends StatelessWidget {
       title: 'SwiftConquer',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true),
-      home: const GameScreen(),
+      home: const TestScreen(),
     );
   }
 }

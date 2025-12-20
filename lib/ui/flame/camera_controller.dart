@@ -1,6 +1,7 @@
 import 'package:flame/camera.dart';
+import 'package:flame/components.dart';
 
-/// Camera configuration only (no input).
+/// Camera configuration only.
 class CameraController {
   final CameraComponent camera;
 

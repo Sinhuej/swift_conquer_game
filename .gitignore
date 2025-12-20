@@ -4,3 +4,11 @@ _backup_phase*
 _backup_*/
 _backup_phase*/
 swift_temp/
+
+# Local scripts / scratch
+scripts/archive/
+*_backup_*/
+_backup_*/
+_backup_phase*/
+swift_temp/
+*.bak

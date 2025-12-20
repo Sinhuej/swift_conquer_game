@@ -3,8 +3,8 @@ import 'simulation_controller.dart';
 import 'time_controller.dart';
 import 'world_state.dart';
 
-import '../../sim_ext/observability/run_meta.dart';
-import '../../sim_ext/observability/sim_inspector.dart';
+import 'package:swift_conquer_game/sim_ext/observability/run_meta.dart';
+import 'package:swift_conquer_game/sim_ext/observability/sim_inspector.dart';
 
 class GameLoop {
   final WorldState world = WorldState();
@@ -26,7 +26,6 @@ class GameLoop {
       seed: 1,
       scenarioId: 'default-scenario',
     ),
-    // Phase 71 baseline snapshot (pure data, safe, minimal)
     snapshotBuilder: () => <String, Object?>{
       'tick': sim.state.tick,
       'entities': world.entityCount,
@@ -62,7 +61,6 @@ class GameLoop {
     );
   }
 
-  /// Optional explicit shutdown hook (headless / tests).
   void endRun() {
     if (!_started) return;
 
@@ -72,7 +70,6 @@ class GameLoop {
       'RUN_END',
     );
 
-    // Optional: capture final snapshot for determinism validation later.
     inspector.captureSnapshot(sim.state.tick);
   }
 }

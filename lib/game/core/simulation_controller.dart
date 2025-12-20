@@ -6,7 +6,7 @@ import 'fixed_timestep.dart';
 import 'tick_state.dart';
 import 'world_state.dart';
 
-import '../../sim_ext/observability/sim_inspector.dart';
+import 'package:swift_conquer_game/sim_ext/observability/sim_inspector.dart';
 
 class SimulationController {
   final WorldState world;
@@ -30,9 +30,6 @@ class SimulationController {
         rng = DeterministicRng(seed: seed),
         fixed = FixedTimestep(step: fixedStep);
 
-  /// Step using a frame dt; internally runs N fixed ticks.
-  ///
-  /// Phase 71: optional observability only (no gameplay changes).
   void step(
     double frameDtSeconds, {
     SimInspector? inspector,
@@ -46,7 +43,6 @@ class SimulationController {
     }
   }
 
-  /// One deterministic fixed tick.
   void _tickOnce({SimInspector? inspector}) {
     state.tick += 1;
     state.simTimeSeconds += fixed.step;
@@ -61,11 +57,8 @@ class SimulationController {
     );
 
     systems.update(fixed.step, world);
-
-    // events.drain() later for combat/FX/etc
     events.drain();
 
-    // Tick boundary hook (snapshots are disabled unless configured)
     inspector?.onTick(state.tick);
   }
 

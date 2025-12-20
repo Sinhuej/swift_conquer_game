@@ -10,6 +10,7 @@ import 'package:swift_conquer_game/sim_ext/observability/sim_inspector.dart';
 import 'package:swift_conquer_game/sim_ext/replay/replay_buffer.dart';
 import 'package:swift_conquer_game/sim_ext/replay/replay_event.dart';
 import 'package:swift_conquer_game/sim_ext/safety/perf_guards.dart';
+import 'package:swift_conquer_game/sim_ext/tuning/tunables.dart';
 
 class SimulationController {
   final WorldState world;
@@ -20,6 +21,8 @@ class SimulationController {
   final FixedTimestep fixed;
   final TickState state = TickState();
 
+  final Tunables tunables;
+
   bool paused = false;
   double timeScale = 1.0;
 
@@ -28,10 +31,12 @@ class SimulationController {
     SystemManager? systems,
     int seed = 1,
     double fixedStep = 1 / 60,
+    Tunables? tunables,
   })  : world = world ?? WorldState(),
         systems = systems ?? SystemManager(),
         rng = DeterministicRng(seed: seed),
-        fixed = FixedTimestep(step: fixedStep);
+        fixed = FixedTimestep(step: fixedStep),
+        tunables = tunables ?? Tunables();
 
   void step(
     double frameDtSeconds, {

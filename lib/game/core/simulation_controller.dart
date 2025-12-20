@@ -6,6 +6,8 @@ import 'fixed_timestep.dart';
 import 'tick_state.dart';
 import 'world_state.dart';
 
+import '../../sim_ext/observability/sim_inspector.dart';
+
 class SimulationController {
   final WorldState world;
   final SystemManager systems;
@@ -29,24 +31,42 @@ class SimulationController {
         fixed = FixedTimestep(step: fixedStep);
 
   /// Step using a frame dt; internally runs N fixed ticks.
-  void step(double frameDtSeconds) {
+  ///
+  /// Phase 71: optional observability only (no gameplay changes).
+  void step(
+    double frameDtSeconds, {
+    SimInspector? inspector,
+  }) {
     if (paused) return;
     final dt = frameDtSeconds * timeScale;
     final n = fixed.accumulate(dt);
+
     for (int i = 0; i < n; i++) {
-      tick();
+      _tickOnce(inspector: inspector);
     }
   }
 
   /// One deterministic fixed tick.
-  void tick() {
+  void _tickOnce({SimInspector? inspector}) {
     state.tick += 1;
     state.simTimeSeconds += fixed.step;
+
+    inspector?.log(
+      state.tick,
+      'SIM',
+      'TICK',
+      payload: {
+        'simTimeSeconds': state.simTimeSeconds,
+      },
+    );
 
     systems.update(fixed.step, world);
 
     // events.drain() later for combat/FX/etc
     events.drain();
+
+    // Tick boundary hook (snapshots are disabled unless configured)
+    inspector?.onTick(state.tick);
   }
 
   Snapshot snapshot() => Snapshot.fromWorld(tick: state.tick, world: world);

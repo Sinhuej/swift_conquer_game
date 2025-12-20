@@ -7,6 +7,8 @@ import 'tick_state.dart';
 import 'world_state.dart';
 
 import 'package:swift_conquer_game/sim_ext/observability/sim_inspector.dart';
+import 'package:swift_conquer_game/sim_ext/replay/replay_buffer.dart';
+import 'package:swift_conquer_game/sim_ext/replay/replay_event.dart';
 import 'package:swift_conquer_game/sim_ext/safety/perf_guards.dart';
 
 class SimulationController {
@@ -36,6 +38,7 @@ class SimulationController {
     SimInspector? inspector,
     PerfGuards? perf,
     int? nowMs,
+    ReplayBuffer? replay,
   }) {
     if (paused) return;
     final dt = frameDtSeconds * timeScale;
@@ -43,13 +46,13 @@ class SimulationController {
 
     if (perf != null) {
       if (nowMs == null) {
-        throw ArgumentError('nowMs required when perf guards enabled');
+        throw ArgumentError('nowMs required');
       }
       perf.start(nowMs);
     }
 
     for (int i = 0; i < n; i++) {
-      _tickOnce(inspector: inspector);
+      _tickOnce(inspector: inspector, replay: replay);
 
       if (perf != null) {
         perf.check(tick: state.tick, nowMs: nowMs!);
@@ -57,9 +60,20 @@ class SimulationController {
     }
   }
 
-  void _tickOnce({SimInspector? inspector}) {
+  void _tickOnce({
+    SimInspector? inspector,
+    ReplayBuffer? replay,
+  }) {
     state.tick += 1;
     state.simTimeSeconds += fixed.step;
+
+    replay?.record(
+      ReplayEvent(
+        tick: state.tick,
+        type: 'TICK',
+        payload: {'simTimeSeconds': state.simTimeSeconds},
+      ),
+    );
 
     inspector?.log(
       state.tick,

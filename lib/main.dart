@@ -1,18 +1,6 @@
-import 'package:flutter/material.dart';
-import 'screens/test_screen.dart';
+import 'package:flutter/widgets.dart';
+import 'ui/flame/flame_entry.dart';
 
 void main() {
-  runApp(const SwiftConquerApp());
-}
-
-class SwiftConquerApp extends StatelessWidget {
-  const SwiftConquerApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: TestScreen(),
-    );
-  }
+  runApp(const FlameEntry());
 }

@@ -1,0 +1,37 @@
+name: Surprise Build – Balloon Burst
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Balloon Burst
+        uses: actions/checkout@v4
+        with:
+          repository: Sinhuej/balloon_burst
+          ref: main
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.3'
+          channel: stable
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: balloon-burst-surprise-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

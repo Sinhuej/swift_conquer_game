@@ -1,3 +1,5 @@
+import 'dart:ui'; // <-- REQUIRED for Paint & Color
+
 import 'package:flame/game.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/components.dart';
@@ -21,7 +23,6 @@ class SwiftConquerFlameGame extends FlameGame {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // Placeholder colored layers (art can come later)
     _bgFar = ParallaxLayer(
       parallaxFactor: 0.2,
       size: canvasSize,
@@ -67,7 +68,6 @@ class SwiftConquerFlameGame extends FlameGame {
 
     _applyCamera(_cam.position, _cam.zoom);
 
-    // Parallax update (read-only)
     _bgFar.updateFromCamera(_cam.position);
     _bgMid.updateFromCamera(_cam.position);
     _bgNear.updateFromCamera(_cam.position);

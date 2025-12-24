@@ -33,10 +33,6 @@ class SwiftConquerFlameGame extends FlameGame {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // Painter's algorithm (Y-based draw order)
-    children.register<PositionComponent>()
-      ..comparator = (a, b) => a.position.y.compareTo(b.position.y);
-
     // Stage 1 backgrounds (placeholders for now)
     _bgFar = ParallaxLayer(
       parallaxFactor: 0.2,
@@ -66,7 +62,8 @@ class SwiftConquerFlameGame extends FlameGame {
     addAll([_bgFar, _bgMid, _bgNear]);
 
     // Stage 2 debug render (shows interpolation is working)
-    _debugEntities = DebugEntityLayer(buffer: _interp);
+    _debugEntities = DebugEntityLayer(buffer: _interp)
+      ..priority = 0; // background-relative; entities can go above later
     add(_debugEntities);
   }
 
@@ -95,11 +92,9 @@ class SwiftConquerFlameGame extends FlameGame {
     _bgNear.updateFromCamera(_cam.position);
 
     // ---- Stage 2: ingest snapshot when available (once per sim tick)
-    // This hook MUST remain read-only. It should consume the canonical snapshot (B)
-    // that your visualization layer already receives.
     final snap = _tryReadLatestWorldSnapshotForViz();
     if (snap != null) {
-      final flattened = _flattener.flatten(snap); // B -> A (Flame-side)
+      final flattened = _flattener.flatten(snap);
       _interp.ingest(flattened);
     }
   }
@@ -108,19 +103,12 @@ class SwiftConquerFlameGame extends FlameGame {
   // Snapshot hooks (READ-ONLY)
   // ---------------------------------------------------------------------------
 
-  /// Return the latest canonical snapshot (B) used for visualization, or null if none.
-  /// IMPORTANT: do NOT import core sim types here if they live outside UI layer;
-  /// this should reference only visualization DTOs.
   dynamic _tryReadLatestWorldSnapshotForViz() {
-    // TODO: Wire this to your existing snapshot feed.
-    // Examples:
-    // - a Stream/ValueNotifier updated by your Flutter layer
-    // - a cached lastSnapshot your Flame game is already receiving
+    // TODO: wire to your real snapshot feed
     return null;
   }
 
   Vector2 _getCameraTargetWorldPosFromSnapshot() {
-    // v1 safe default until wired to snapshot
     return Vector2.zero();
   }
 

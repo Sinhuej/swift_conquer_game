@@ -1,32 +1,82 @@
 import 'package:flame/extensions.dart';
 import 'render_entity.dart';
 
-/// Flame-only adapter that derives a render-ready list (A) from your canonical snapshot (B).
-/// This MUST NOT import or mutate core sim. It should only read snapshot DTOs that
-/// are already intended for visualization.
-///
-/// By default it returns empty until you wire the snapshot shape.
+/// Flame-only adapter that derives a render-ready list (A) from canonical snapshot (B).
+/// Must remain READ-ONLY and UI-safe.
 class SnapshotFlattener {
   const SnapshotFlattener();
 
-  /// Replace the body with your actual snapshot read.
-  /// `snapshot` is whatever your visualization layer already receives (B).
   List<RenderEntity> flatten(dynamic snapshot) {
-    // TODO: Wire to your real canonical snapshot (B).
-    //
-    // Example pseudocode (adapt to your real fields):
-    // final entities = <RenderEntity>[];
-    // for (final e in snapshot.entities) {
-    //   entities.add(RenderEntity(
-    //     id: e.id,
-    //     pos: Vector2(e.x, e.y),
-    //     rot: e.rot,
-    //     type: e.typeIndex,
-    //     flags: e.flags,
-    //   ));
-    // }
-    // return entities;
+    try {
+      final dyn = snapshot as dynamic;
+      final entities = dyn.entities as dynamic;
+      if (entities == null) return const <RenderEntity>[];
 
-    return const <RenderEntity>[];
+      final out = <RenderEntity>[];
+      for (final e in entities) {
+        final id = _readInt(e, 'id');
+        final x = _readNum(e, 'x');
+        final y = _readNum(e, 'y');
+
+        if (id == null || x == null || y == null) continue;
+
+        final rot = _readNum(e, 'rot') ?? 0.0;
+        final type = _readInt(e, 'type') ?? 0;
+        final flags = _readInt(e, 'flags') ?? 0;
+
+        out.add(RenderEntity(
+          id: id,
+          pos: Vector2(x, y),
+          rot: rot,
+          type: type,
+          flags: flags,
+        ));
+      }
+      return out;
+    } catch (_) {
+      return const <RenderEntity>[];
+    }
+  }
+
+  double? _readNum(dynamic obj, String key) {
+    try {
+      if (obj is Map) {
+        final v = obj[key];
+        return v is num ? v.toDouble() : null;
+      }
+      final v = (obj as dynamic).toJson?.call();
+      if (v is Map) {
+        final m = v[key];
+        return m is num ? m.toDouble() : null;
+      }
+      // Typed DTO common field names
+      if (key == 'x') return ((obj as dynamic).x as num).toDouble();
+      if (key == 'y') return ((obj as dynamic).y as num).toDouble();
+      if (key == 'rot') return ((obj as dynamic).rot as num).toDouble();
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  int? _readInt(dynamic obj, String key) {
+    try {
+      if (obj is Map) {
+        final v = obj[key];
+        return v is num ? v.toInt() : null;
+      }
+      final v = (obj as dynamic).toJson?.call();
+      if (v is Map) {
+        final m = v[key];
+        return m is num ? m.toInt() : null;
+      }
+      // Typed DTO common field names
+      if (key == 'id') return ((obj as dynamic).id as num).toInt();
+      if (key == 'type') return ((obj as dynamic).type as num).toInt();
+      if (key == 'flags') return ((obj as dynamic).flags as num).toInt();
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 }

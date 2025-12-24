@@ -25,9 +25,18 @@ class SwiftConquerFlameGame extends FlameGame {
   late final ParallaxLayer _bgNear;
 
   // ---------------- Stage 2 (interpolation) ----------------
-  final InterpolationBuffer _interp = InterpolationBuffer(tickSeconds: 1 / 20);
+  final InterpolationBuffer _interp = InterpolationBuffer(tickSeconds: 1 / 60);
   final SnapshotFlattener _flattener = const SnapshotFlattener();
   late final DebugEntityLayer _debugEntities;
+
+  // Latest canonical snapshot (B) pushed from Flutter/UI bridge.
+  dynamic _latestSnapshot;
+
+  /// Read-only push from Flutter.
+  /// Flame does NOT tick the simulation. Flame only renders what it is given.
+  void pushSnapshot(dynamic snapshot) {
+    _latestSnapshot = snapshot;
+  }
 
   @override
   Future<void> onLoad() async {
@@ -61,9 +70,8 @@ class SwiftConquerFlameGame extends FlameGame {
 
     addAll([_bgFar, _bgMid, _bgNear]);
 
-    // Stage 2 debug render (shows interpolation is working)
-    _debugEntities = DebugEntityLayer(buffer: _interp)
-      ..priority = 0; // background-relative; entities can go above later
+    // Debug render layer: proves interpolation is working with real snapshot data.
+    _debugEntities = DebugEntityLayer(buffer: _interp)..priority = 10;
     add(_debugEntities);
   }
 
@@ -71,10 +79,10 @@ class SwiftConquerFlameGame extends FlameGame {
   void update(double dt) {
     super.update(dt);
 
-    // ---- Stage 2: advance render-time between ticks
+    // Stage 2: advance render-time between ticks (visual only)
     _interp.update(dt);
 
-    // ---- Stage 1: camera smoothing (visual only)
+    // Stage 1: camera smoothing (visual only)
     final targetWorldPos = _getCameraTargetWorldPosFromSnapshot();
     final targetZoom = _getTargetZoomFromSnapshotOrDefault();
 
@@ -91,11 +99,13 @@ class SwiftConquerFlameGame extends FlameGame {
     _bgMid.updateFromCamera(_cam.position);
     _bgNear.updateFromCamera(_cam.position);
 
-    // ---- Stage 2: ingest snapshot when available (once per sim tick)
+    // Stage 2: ingest canonical snapshot (B) when available
     final snap = _tryReadLatestWorldSnapshotForViz();
     if (snap != null) {
-      final flattened = _flattener.flatten(snap);
-      _interp.ingest(flattened);
+      final flattened = _flattener.flatten(snap); // B -> A (Flame-side)
+      if (flattened.isNotEmpty) {
+        _interp.ingest(flattened);
+      }
     }
   }
 
@@ -103,21 +113,69 @@ class SwiftConquerFlameGame extends FlameGame {
   // Snapshot hooks (READ-ONLY)
   // ---------------------------------------------------------------------------
 
-  dynamic _tryReadLatestWorldSnapshotForViz() {
-    // TODO: wire to your real snapshot feed
-    return null;
-  }
+  dynamic _tryReadLatestWorldSnapshotForViz() => _latestSnapshot;
 
   Vector2 _getCameraTargetWorldPosFromSnapshot() {
-    return Vector2.zero();
+    // v1: action centroid (best feel) derived from snapshot if possible
+    try {
+      final snap = _latestSnapshot;
+      if (snap == null) return Vector2.zero();
+      final list = (snap as dynamic).entities as dynamic;
+      if (list == null) return Vector2.zero();
+
+      double sx = 0, sy = 0;
+      int n = 0;
+
+      for (final e in list) {
+        final dx = _readNum(e, 'x');
+        final dy = _readNum(e, 'y');
+        if (dx == null || dy == null) continue;
+        sx += dx;
+        sy += dy;
+        n++;
+      }
+      if (n == 0) return Vector2.zero();
+      return Vector2(sx / n, sy / n);
+    } catch (_) {
+      return Vector2.zero();
+    }
   }
 
-  double _getTargetZoomFromSnapshotOrDefault() {
-    return 1.0;
-  }
+  double _getTargetZoomFromSnapshotOrDefault() => 1.0;
 
   void _applyCamera(Vector2 worldPos, double zoom) {
     camera.viewfinder.position = worldPos;
     camera.viewfinder.zoom = zoom;
+  }
+
+  double? _readNum(dynamic obj, String key) {
+    try {
+      if (obj is Map) {
+        final v = obj[key];
+        if (v is num) return v.toDouble();
+        return null;
+      }
+      final v = (obj as dynamic).__getattr__(key); // will throw; kept for safety
+      if (v is num) return v.toDouble();
+      return null;
+    } catch (_) {
+      // Typed DTO path
+      try {
+        final v = (obj as dynamic).toJson?.call();
+        if (v is Map) {
+          final m = v[key];
+          if (m is num) return m.toDouble();
+        }
+      } catch (_) {}
+      try {
+        final v = (obj as dynamic).x;
+        if (key == 'x' && v is num) return v.toDouble();
+      } catch (_) {}
+      try {
+        final v = (obj as dynamic).y;
+        if (key == 'y' && v is num) return v.toDouble();
+      } catch (_) {}
+      return null;
+    }
   }
 }

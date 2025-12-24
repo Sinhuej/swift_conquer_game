@@ -1,46 +1,56 @@
 import 'package:flame/game.dart';
+import 'package:flame/extensions.dart';
 
-import '../bridge/simulation_bridge.dart';
-import '../render_models/render_world.dart';
-import 'camera_controller.dart';
-import 'unit_component.dart';
+import 'camera/camera_smoother.dart';
 
-/// Flame game rendering real simulation snapshots.
-/// NO input handling here yet (intentionally).
 class SwiftConquerFlameGame extends FlameGame {
-
-  late final CameraController cameraController;
-  late final SimulationBridge sim;
-
-  RenderWorld? _renderWorld;
-
-  @override
-  Future<void> onLoad() async {
-    await super.onLoad();
-    cameraController = CameraController(camera);
-    cameraController.configure();
-    sim = SimulationBridge();
-  }
+  /// Pure-visual camera smoother (NO sim authority)
+  final CameraSmoother _cam = CameraSmoother(
+    initialPosition: Vector2.zero(),
+    initialZoom: 1.0,
+    positionSharpness: 12.0,
+    zoomSharpness: 10.0,
+  );
 
   @override
   void update(double dt) {
     super.update(dt);
-    sim.tick(dt);
-    _applySnapshot(sim.snapshot());
+
+    // ---- READ-ONLY SNAPSHOT DERIVATION ----
+    final Vector2 targetWorldPos = _getCameraTargetWorldPosFromSnapshot();
+    final double targetZoom = _getTargetZoomFromSnapshotOrDefault();
+
+    _cam.update(
+      dt: dt,
+      targetPosition: targetWorldPos,
+      targetZoom: targetZoom,
+    );
+
+    _applyCamera(_cam.position, _cam.zoom);
   }
 
-  void _applySnapshot(RenderWorld world) {
-    _renderWorld = world;
+  // ---------------------------------------------------------------------------
+  // Snapshot-derived targets (VISUAL ONLY)
+  // ---------------------------------------------------------------------------
 
-    final existing = children.whereType<UnitComponent>().toList();
-    for (final c in existing) {
-      c.removeFromParent();
-    }
-
-    for (final u in world.units) {
-      add(UnitComponent(u));
-    }
+  Vector2 _getCameraTargetWorldPosFromSnapshot() {
+    // TODO: replace with real snapshot read
+    // Safe v1 default: center of the world / map
+    return Vector2.zero();
   }
 
-  RenderWorld? get renderWorld => _renderWorld;
+  double _getTargetZoomFromSnapshotOrDefault() {
+    // TODO: derive later (combat zoom, selection, etc.)
+    return 1.0;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Camera adapter (Flame-version isolated)
+  // ---------------------------------------------------------------------------
+
+  void _applyCamera(Vector2 worldPos, double zoom) {
+    // Most common Flame camera API
+    cameraComponent.viewfinder.position = worldPos;
+    cameraComponent.viewfinder.zoom = zoom;
+  }
 }

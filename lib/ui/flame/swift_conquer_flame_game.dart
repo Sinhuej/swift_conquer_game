@@ -1,4 +1,4 @@
-import 'dart:ui'; // <-- REQUIRED for Paint & Color
+import 'dart:ui';
 
 import 'package:flame/game.dart';
 import 'package:flame/extensions.dart';
@@ -22,6 +22,10 @@ class SwiftConquerFlameGame extends FlameGame {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+
+    // Enable painter's algorithm (Y-based draw order)
+    children.register<PositionComponent>()
+      ..comparator = (a, b) => a.position.y.compareTo(b.position.y);
 
     _bgFar = ParallaxLayer(
       parallaxFactor: 0.2,

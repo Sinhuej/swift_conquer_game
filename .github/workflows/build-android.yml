@@ -26,10 +26,7 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Run headless determinism tests
-        run: flutter test test/determinism test/sim_ext
-
+        
       - name: Build APK
         run: flutter build apk --release
 

@@ -9,7 +9,7 @@ class SelectionController extends Component
 
   @override
   void onTapUp(TapUpEvent event) {
-    final tapped = gameRef.componentsAtPoint(event.canvasPosition)
+    final tapped = game.componentsAtPoint(event.canvasPosition)
         .whereType<UnitComponent>()
         .firstOrNull;
 

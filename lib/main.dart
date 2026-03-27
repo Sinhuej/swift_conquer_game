@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/test_screen.dart';
+import 'screens/game_screen.dart';
 
 void main() {
   runApp(const SwiftConquerApp());
@@ -12,7 +12,7 @@ class SwiftConquerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: TestScreen(),
+      home: GameScreen(),
     );
   }
 }

@@ -6,7 +6,7 @@ import '../../sim_ext/ai_integration/command_sink.dart';
 import '../../sim_ext/ai_wiring/command_envelope.dart';
 
 class PlayerInput extends Component
-    with TapCallbacks, HasGameRef<FlameGame> {
+    with TapCallbacks, HasGameReference<FlameGame> {
   final CommandSink sink;
 
   /// Temporary: hardcoded selected unit until we add selection.

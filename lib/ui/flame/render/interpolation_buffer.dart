@@ -27,8 +27,7 @@ class InterpolationBuffer {
     _prev
       ..clear()
       ..addAll(_curr);
-    _curr
-      ..clear();
+    _curr.clear();
     for (final e in entities) {
       _curr[e.id] = e;
     }

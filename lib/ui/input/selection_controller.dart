@@ -4,7 +4,7 @@ import 'package:flame/game.dart';
 import '../flame/unit_component.dart';
 
 class SelectionController extends Component
-    with TapCallbacks, HasGameRef<FlameGame> {
+    with TapCallbacks, HasGameReference<FlameGame> {
   UnitComponent? selected;
 
   @override

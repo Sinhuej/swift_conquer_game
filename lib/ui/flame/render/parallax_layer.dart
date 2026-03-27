@@ -1,5 +1,4 @@
 import 'package:flame/components.dart';
-import 'package:flame/game.dart';
 
 /// Pure visual parallax layer.
 /// Moves slower/faster than camera to create depth illusion.

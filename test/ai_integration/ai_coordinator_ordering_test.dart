@@ -3,7 +3,6 @@ import 'package:test/test.dart';
 import 'package:swift_conquer_game/sim_ext/ai/ai_personality.dart';
 import 'package:swift_conquer_game/sim_ext/ai/ai_runner.dart';
 import 'package:swift_conquer_game/sim_ext/ai/default_policy.dart';
-import 'package:swift_conquer_game/sim_ext/ai/ai_personality.dart';
 import 'package:swift_conquer_game/sim_ext/ai_integration/ai_coordinator.dart';
 import 'package:swift_conquer_game/sim_ext/ai_integration/command_sink.dart';
 import 'package:swift_conquer_game/sim_ext/ai_wiring/command_envelope.dart';

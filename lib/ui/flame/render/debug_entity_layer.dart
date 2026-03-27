@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flame/components.dart';
-import 'package:flame/extensions.dart';
 import 'interpolation_buffer.dart';
 
 /// Debug-only render layer that draws interpolated entities as circles.

@@ -4,7 +4,7 @@ import 'package:flame/extensions.dart';
 /// Pure visual camera smoothing (read-only).
 /// NO simulation access. NO mutation.
 class CameraSmoother {
-  Vector2 _pos;
+  final Vector2 _pos;
   double _zoom;
 
   final double positionSharpness;

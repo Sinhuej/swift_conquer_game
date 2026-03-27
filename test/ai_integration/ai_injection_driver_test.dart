@@ -2,7 +2,6 @@ import 'package:test/test.dart';
 
 import 'package:swift_conquer_game/sim_ext/ai/ai_personality.dart';
 import 'package:swift_conquer_game/sim_ext/ai/ai_runner.dart';
-import 'package:swift_conquer_game/sim_ext/ai/ai_types.dart';
 import 'package:swift_conquer_game/sim_ext/ai/default_policy.dart';
 import 'package:swift_conquer_game/sim_ext/ai_integration/ai_injection_driver.dart';
 import 'package:swift_conquer_game/sim_ext/ai_integration/command_sink.dart';

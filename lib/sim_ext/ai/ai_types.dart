@@ -1,7 +1,7 @@
-/// Phase 101: AI core primitives (headless, inert).
-///
-/// These types are intentionally engine-agnostic so we can wire them into
-/// SystemManager later without risking core determinism.
+// Phase 101: AI core primitives (headless, inert).
+//
+// These types are intentionally engine-agnostic so we can wire them into
+// SystemManager later without risking core determinism.
 
 typedef AiPayload = Map<String, Object?>;
 

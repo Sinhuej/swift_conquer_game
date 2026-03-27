@@ -1,6 +1,5 @@
 import '../core/world_state.dart';
 import '../fog/fog_map.dart';
-import 'vision.dart';
 
 class VisionSystem {
   final FogMap fog;

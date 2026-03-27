@@ -4,12 +4,12 @@ import '../components/position.dart';
 import '../components/target_order.dart';
 import '../components/team.dart';
 import '../math/vec2.dart';
+import '../vision/vision.dart';
 import 'entity_id.dart';
 
 class WorldState {
   int _nextId = 1;
 
-  // Save/load support (Phase 77–78). Inert unless used.
   int get nextIdForSave => _nextId;
   void setNextIdForSave(int value) {
     if (value < 1) {
@@ -25,6 +25,9 @@ class WorldState {
   final Map<EntityId, Team> teams = {};
   final Map<EntityId, MoveOrder> moveOrders = {};
   final Map<EntityId, TargetOrder> targetOrders = {};
+  final Map<EntityId, Vision> visions = {};
+
+  final Map<int, int> teamResources = {};
 
   int get entityCount => entities.length;
 
@@ -38,6 +41,8 @@ class WorldState {
     teams[id] = Team(teamId);
     moveOrders[id] = MoveOrder();
     targetOrders[id] = TargetOrder();
+    visions[id] = Vision(5.0);
+    teamResources.putIfAbsent(teamId, () => 0);
     return id;
   }
 
@@ -48,5 +53,6 @@ class WorldState {
     teams.remove(id);
     moveOrders.remove(id);
     targetOrders.remove(id);
+    visions.remove(id);
   }
 }

@@ -1,0 +1,54 @@
+name: SwiftConquer APK Build
+
+on:
+  push:
+    branches:
+      - main
+      - restore/phase170-working
+      - working/phase170-movement-ci
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.35.0
+          cache: true
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Recreate Android shell if missing
+        run: |
+          if [ ! -d android ]; then
+            flutter create . \
+              --platforms=android \
+              --project-name swift_conquer_game \
+              --org com.swiftconquer
+          fi
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: swiftconquer-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

@@ -1,0 +1,28 @@
+{
+  "id": "dev_map_01",
+  "name": "Dev Map 01",
+  "worldWidth": 2000,
+  "worldHeight": 1200,
+  "cellSize": 40,
+  "spawns": [
+    { "x": 200, "y": 600 },
+    { "x": 1800, "y": 600 }
+  ],
+  "blocked": [
+    { "col": 20, "row": 8 },
+    { "col": 21, "row": 8 },
+    { "col": 22, "row": 8 },
+    { "col": 23, "row": 8 },
+    { "col": 24, "row": 8 },
+
+    { "col": 20, "row": 20 },
+    { "col": 21, "row": 20 },
+    { "col": 22, "row": 20 },
+    { "col": 23, "row": 20 },
+    { "col": 24, "row": 20 }
+  ],
+  "resources": [
+    { "x": 700, "y": 420, "type": "ore", "amount": 5000 },
+    { "x": 1300, "y": 780, "type": "ore", "amount": 5000 }
+  ]
+}

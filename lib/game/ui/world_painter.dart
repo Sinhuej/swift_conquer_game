@@ -1,6 +1,13 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+
+import '../buildings/building_footprint.dart';
+import '../buildings/building_type.dart';
 import '../core/entity_id.dart';
 import '../core/world_state.dart';
+import '../map/map_definition.dart';
+import '../map/map_grid.dart';
 import '../math/vec2.dart';
 import 'camera_view.dart';
 
@@ -8,36 +15,163 @@ class WorldPainter extends CustomPainter {
   final WorldState world;
   final CameraView cam;
   final Set<EntityId> selected;
+  final MapDefinition? map;
+  final MapGrid? grid;
+  final Set<GridCell> buildRadiusCells;
+  final BuildingType? pendingType;
 
   WorldPainter({
     required this.world,
     required this.cam,
     required this.selected,
+    required this.map,
+    required this.grid,
+    required this.buildRadiusCells,
+    required this.pendingType,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Background
     final bg = Paint()..color = const Color(0xFF0B1220);
     canvas.drawRect(Offset.zero & size, bg);
 
-    _drawGrid(canvas, size);
+    _drawMapBounds(canvas);
+    _drawBuildRadius(canvas);
+    _drawBlockedCells(canvas);
+    _drawBuildings(canvas);
     _drawUnits(canvas);
+    _drawHudHint(canvas, size);
   }
 
-  void _drawGrid(Canvas canvas, Size size) {
-    final gridPaint = Paint()
-      ..color = const Color(0xFF182233)
-      ..strokeWidth = 1;
+  void _drawMapBounds(Canvas canvas) {
+    if (map == null) return;
 
-    const spacing = 64.0;
+    final topLeft = cam.worldToScreen(const Vec2(0, 0));
+    final bottomRight = cam.worldToScreen(Vec2(map!.worldWidth, map!.worldHeight));
 
-    // Screen-space grid (simple + fast)
-    for (double x = 0; x <= size.width; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    final rect = Rect.fromLTRB(
+      topLeft.x,
+      topLeft.y,
+      bottomRight.x,
+      bottomRight.y,
+    );
+
+    canvas.drawRect(
+      rect,
+      Paint()..color = const Color(0xFF101A28),
+    );
+
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = const Color(0xFF223247),
+    );
+  }
+
+  void _drawBuildRadius(Canvas canvas) {
+    final g = grid;
+    if (g == null) return;
+
+    final fill = Paint()..color = const Color(0x2222C55E);
+
+    for (final cell in buildRadiusCells) {
+      final world = g.cellTopLeft(cell);
+      final screen = cam.worldToScreen(world);
+      final rect = Rect.fromLTWH(
+        screen.x,
+        screen.y,
+        g.cellSize * cam.zoom,
+        g.cellSize * cam.zoom,
+      );
+      canvas.drawRect(rect, fill);
     }
-    for (double y = 0; y <= size.height; y += spacing) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+  }
+
+  void _drawBlockedCells(Canvas canvas) {
+    final g = grid;
+    final m = map;
+    if (g == null || m == null) return;
+
+    final fill = Paint()..color = const Color(0xFF243244);
+
+    for (final cell in m.blocked) {
+      final world = g.cellTopLeft(cell);
+      final screen = cam.worldToScreen(world);
+      final rect = Rect.fromLTWH(
+        screen.x,
+        screen.y,
+        g.cellSize * cam.zoom,
+        g.cellSize * cam.zoom,
+      );
+      canvas.drawRect(rect, fill);
+    }
+  }
+
+  void _drawBuildings(Canvas canvas) {
+    final g = grid;
+    if (g == null) return;
+
+    for (final id in world.buildingIds) {
+      final type = world.buildingTypes[id];
+      final pos = world.buildingPositions[id];
+      final team = world.buildingTeams[id];
+
+      if (type == null || pos == null) continue;
+
+      final fp = footprintFor(type);
+      final width = fp.cols * g.cellSize.toDouble();
+      final height = fp.rows * g.cellSize.toDouble();
+
+      final topLeftWorld = Vec2(pos.x - width / 2, pos.y - height / 2);
+      final topLeftScreen = cam.worldToScreen(topLeftWorld);
+
+      final rect = Rect.fromLTWH(
+        topLeftScreen.x,
+        topLeftScreen.y,
+        width * cam.zoom,
+        height * cam.zoom,
+      );
+
+      final fill = Paint()
+        ..color = _buildingColor(type, team?.id ?? 1);
+      canvas.drawRect(rect, fill);
+
+      final border = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = const Color(0xFF0F172A);
+      canvas.drawRect(rect, border);
+
+      final tp = TextPainter(
+        text: TextSpan(
+          text: type.label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: rect.width - 8);
+
+      tp.paint(canvas, Offset(rect.left + 4, rect.top + 4));
+    }
+  }
+
+  Color _buildingColor(BuildingType type, int teamId) {
+    switch (type) {
+      case BuildingType.hq:
+        return const Color(0xFF1D4ED8);
+      case BuildingType.powerPlant:
+        return const Color(0xFFEAB308);
+      case BuildingType.barracks:
+        return const Color(0xFF7C3AED);
+      case BuildingType.refinery:
+        return const Color(0xFFEA580C);
+      case BuildingType.mobileHqCenter:
+        return teamId == 2 ? const Color(0xFFEF4444) : const Color(0xFF60A5FA);
     }
   }
 
@@ -48,19 +182,25 @@ class WorldPainter extends CustomPainter {
 
       final hp = world.health[id];
       final team = world.teams[id];
+      final kind = world.unitKinds[id] ?? 'tank';
 
       final Vec2 screen = cam.worldToScreen(pos.value);
       final center = Offset(screen.x, screen.y);
 
-      // unit body
       final body = Paint()
         ..color = (team?.id == 2)
             ? const Color(0xFFEF4444)
             : const Color(0xFF60A5FA);
 
-      canvas.drawCircle(center, 14, body);
+      if (kind == 'mobile_hq_center') {
+        canvas.drawRect(
+          Rect.fromCenter(center: center, width: 28, height: 20),
+          body,
+        );
+      } else {
+        canvas.drawCircle(center, 14, body);
+      }
 
-      // selection ring
       if (selected.contains(id)) {
         final ring = Paint()
           ..style = PaintingStyle.stroke
@@ -69,7 +209,6 @@ class WorldPainter extends CustomPainter {
         canvas.drawCircle(center, 18, ring);
       }
 
-      // HP bar
       if (hp != null && hp.max > 0) {
         final frac = (hp.current / hp.max).clamp(0.0, 1.0);
         const barW = 40.0;
@@ -90,8 +229,27 @@ class WorldPainter extends CustomPainter {
     }
   }
 
+  void _drawHudHint(Canvas canvas, Size size) {
+    final hint = pendingType == null
+        ? 'Tap units to move. Deploy Mobile HQ, then build.'
+        : 'Build mode: ${pendingType!.label}';
+
+    final tp = TextPainter(
+      text: TextSpan(
+        text: hint,
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 12,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: size.width - 16);
+
+    tp.paint(canvas, Offset(8, size.height - 24));
+  }
+
   @override
   bool shouldRepaint(covariant WorldPainter oldDelegate) {
-    return true; // Phase 32-40: simple always repaint
+    return true;
   }
 }

@@ -1,3 +1,9 @@
+#!/data/data/com.termux/files/usr/bin/bash
+set -e
+
+echo "== SwiftConquer Phase 206-210: restore bookmarks, central mobile HQ start, and non-stacked production =="
+
+cat > lib/screens/game_screen.dart <<'DART'
 import 'dart:async';
 import 'dart:ui';
 
@@ -825,3 +831,14 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 }
+DART
+
+chmod +x phase206_210_layout_cleanup.sh
+
+echo
+echo "Phase 206-210 files written."
+echo "Next:"
+echo "  git status --short"
+echo "  git add lib/screens/game_screen.dart phase206_210_layout_cleanup.sh"
+echo "  git commit -m \"Phase 206-210: restore bookmarks, central mobile HQ start, and non-stacked production\""
+echo "  git push origin working/phase170-movement-ci"

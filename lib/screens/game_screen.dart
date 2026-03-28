@@ -239,6 +239,10 @@ class _GameScreenState extends State<GameScreen> {
           input.selected
             ..clear()
             ..add(built);
+          _dragStart = null;
+          _dragCurrent = null;
+          _dragSelecting = false;
+          _lastScaleFocal = null;
           _status = '${type.label} placed.';
         });
       } else {
@@ -409,10 +413,10 @@ class _GameScreenState extends State<GameScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('SwiftConquer • Phase 181–190'),
-      ),
-      body: Column(
+      backgroundColor: const Color(0xFF0B1220),
+      body: ColoredBox(
+        color: const Color(0xFF0B1220),
+        child: Column(
         children: [
           Container(
             width: double.infinity,
@@ -498,10 +502,11 @@ class _GameScreenState extends State<GameScreen> {
                 onScaleEnd: (_) {
                   _lastScaleFocal = null;
                 },
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: CustomPaint(
+                child: SizedBox.expand(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CustomPaint(
                         painter: WorldPainter(
                           world: loop.world,
                           cam: cam,
@@ -514,15 +519,16 @@ class _GameScreenState extends State<GameScreen> {
                         ),
                         child: const SizedBox.expand(),
                       ),
-                    ),
-                    _buildHqSidebar(),
-                  ],
+                      _buildHqSidebar(),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
           _buildBottomBar(),
         ],
+      ),
       ),
     );
   }

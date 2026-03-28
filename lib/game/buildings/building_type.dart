@@ -22,11 +22,27 @@ extension BuildingTypeX on BuildingType {
     }
   }
 
-  bool get projectsBuildRadius => this != BuildingType.mobileHqCenter;
+  bool get projectsBuildRadius {
+    switch (this) {
+      case BuildingType.mobileHqCenter:
+        return false;
+      case BuildingType.hq:
+      case BuildingType.powerPlant:
+      case BuildingType.barracks:
+      case BuildingType.refinery:
+        return true;
+    }
+  }
 
   bool get isBuildMenuType {
-    return this == BuildingType.powerPlant ||
-        this == BuildingType.barracks ||
-        this == BuildingType.refinery;
+    switch (this) {
+      case BuildingType.powerPlant:
+      case BuildingType.barracks:
+      case BuildingType.refinery:
+        return true;
+      case BuildingType.mobileHqCenter:
+      case BuildingType.hq:
+        return false;
+    }
   }
 }

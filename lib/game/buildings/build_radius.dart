@@ -2,6 +2,7 @@ import '../core/world_state.dart';
 import '../map/map_definition.dart';
 import '../map/map_grid.dart';
 import 'building_footprint.dart';
+import 'building_type.dart';
 
 class BuildRadius {
   static const int tiles = 3;

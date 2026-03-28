@@ -1,3 +1,534 @@
+#!/data/data/com.termux/files/usr/bin/bash
+set -e
+
+echo "== SwiftConquer Phase 191-195: persistent build bar + bookmarks + building HP + 3-finger zoom =="
+
+mkdir -p lib/game/state
+
+cat > lib/game/state/camera_bookmarks.dart <<'DART'
+import '../math/vec2.dart';
+
+class CameraBookmark {
+  final Vec2 offset;
+  final double zoom;
+
+  const CameraBookmark({
+    required this.offset,
+    required this.zoom,
+  });
+}
+
+class CameraBookmarks {
+  final Map<int, CameraBookmark> _slots = <int, CameraBookmark>{};
+
+  void save({
+    required int slot,
+    required Vec2 offset,
+    required double zoom,
+  }) {
+    _slots[slot] = CameraBookmark(
+      offset: Vec2(offset.x, offset.y),
+      zoom: zoom,
+    );
+  }
+
+  CameraBookmark? recall(int slot) => _slots[slot];
+
+  bool hasSlot(int slot) => _slots.containsKey(slot);
+}
+DART
+
+cat > lib/game/ui/camera_view.dart <<'DART'
+import '../math/vec2.dart';
+
+class CameraView {
+  Vec2 offset;
+  double zoom;
+
+  CameraView({
+    required this.offset,
+    required this.zoom,
+  });
+
+  Vec2 worldToScreen(Vec2 world) {
+    return Vec2(
+      (world.x - offset.x) * zoom,
+      (world.y - offset.y) * zoom,
+    );
+  }
+
+  Vec2 screenToWorld(Vec2 screen) {
+    return Vec2(
+      offset.x + (screen.x / zoom),
+      offset.y + (screen.y / zoom),
+    );
+  }
+
+  void panByScreenDelta(Vec2 deltaScreen) {
+    offset = Vec2(
+      offset.x - (deltaScreen.x / zoom),
+      offset.y - (deltaScreen.y / zoom),
+    );
+  }
+
+  void setZoomAroundScreen({
+    required double newZoom,
+    required Vec2 focalScreen,
+  }) {
+    final before = screenToWorld(focalScreen);
+    zoom = newZoom.clamp(0.5, 2.5).toDouble();
+
+    offset = Vec2(
+      before.x - (focalScreen.x / zoom),
+      before.y - (focalScreen.y / zoom),
+    );
+  }
+
+  void zoomByScale({
+    required double scaleDelta,
+    required Vec2 focalScreen,
+  }) {
+    if (!scaleDelta.isFinite || scaleDelta <= 0) return;
+    final target = (zoom * scaleDelta).clamp(0.5, 2.5).toDouble();
+    setZoomAroundScreen(
+      newZoom: target,
+      focalScreen: focalScreen,
+    );
+  }
+}
+DART
+
+cat > lib/game/core/world_state.dart <<'DART'
+import '../buildings/building_type.dart';
+import '../components/health.dart';
+import '../components/move_order.dart';
+import '../components/position.dart';
+import '../components/target_order.dart';
+import '../components/team.dart';
+import '../math/vec2.dart';
+import 'entity_id.dart';
+
+class WorldState {
+  int _nextId = 1;
+
+  int get nextIdForSave => _nextId;
+
+  void setNextIdForSave(int value) {
+    if (value < 1) {
+      throw ArgumentError('nextId must be >= 1');
+    }
+    _nextId = value;
+  }
+
+  final Set<EntityId> entities = <EntityId>{};
+
+  final Map<EntityId, Position> positions = {};
+  final Map<EntityId, Health> health = {};
+  final Map<EntityId, Team> teams = {};
+  final Map<EntityId, MoveOrder> moveOrders = {};
+  final Map<EntityId, TargetOrder> targetOrders = {};
+  final Map<EntityId, String> unitKinds = {};
+
+  final Set<EntityId> buildingIds = <EntityId>{};
+  final Map<EntityId, BuildingType> buildingTypes = {};
+  final Map<EntityId, Vec2> buildingPositions = {};
+  final Map<EntityId, Team> buildingTeams = {};
+  final Map<EntityId, Health> buildingHealth = {};
+
+  int get entityCount => entities.length + buildingIds.length;
+
+  bool exists(EntityId id) => entities.contains(id) || buildingIds.contains(id);
+
+  EntityId spawnUnit(
+    Vec2 start, {
+    int teamId = 1,
+    int hp = 20,
+    String kind = 'tank',
+  }) {
+    final id = EntityId(_nextId++);
+    entities.add(id);
+    positions[id] = Position(start);
+    health[id] = Health(current: hp, max: hp);
+    teams[id] = Team(teamId);
+    moveOrders[id] = MoveOrder();
+    targetOrders[id] = TargetOrder();
+    unitKinds[id] = kind;
+    return id;
+  }
+
+  EntityId spawnMobileHqCenter(
+    Vec2 start, {
+    int teamId = 1,
+    int hp = 35,
+  }) {
+    return spawnUnit(
+      start,
+      teamId: teamId,
+      hp: hp,
+      kind: 'mobile_hq_center',
+    );
+  }
+
+  bool isMobileHqCenter(EntityId id) => unitKinds[id] == 'mobile_hq_center';
+
+  int _defaultBuildingHp(BuildingType type) {
+    switch (type) {
+      case BuildingType.hq:
+        return 300;
+      case BuildingType.powerPlant:
+        return 140;
+      case BuildingType.barracks:
+        return 160;
+      case BuildingType.refinery:
+        return 180;
+      case BuildingType.warFactory:
+        return 220;
+      case BuildingType.mobileHqCenter:
+        return 100;
+    }
+  }
+
+  EntityId spawnBuilding(
+    BuildingType type,
+    Vec2 center, {
+    int teamId = 1,
+  }) {
+    final id = EntityId(_nextId++);
+    buildingIds.add(id);
+    buildingTypes[id] = type;
+    buildingPositions[id] = center;
+    buildingTeams[id] = Team(teamId);
+
+    final hp = _defaultBuildingHp(type);
+    buildingHealth[id] = Health(current: hp, max: hp);
+
+    return id;
+  }
+
+  void destroy(EntityId id) {
+    entities.remove(id);
+    positions.remove(id);
+    health.remove(id);
+    teams.remove(id);
+    moveOrders.remove(id);
+    targetOrders.remove(id);
+    unitKinds.remove(id);
+
+    buildingIds.remove(id);
+    buildingTypes.remove(id);
+    buildingPositions.remove(id);
+    buildingTeams.remove(id);
+    buildingHealth.remove(id);
+  }
+}
+DART
+
+cat > lib/game/ui/world_painter.dart <<'DART'
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
+
+import '../buildings/building_footprint.dart';
+import '../buildings/building_type.dart';
+import '../core/entity_id.dart';
+import '../core/world_state.dart';
+import '../map/map_definition.dart';
+import '../map/map_grid.dart';
+import '../math/vec2.dart';
+import 'camera_view.dart';
+
+class WorldPainter extends CustomPainter {
+  final WorldState world;
+  final CameraView cam;
+  final Set<EntityId> selected;
+  final MapDefinition? map;
+  final MapGrid? grid;
+  final Set<GridCell> buildRadiusCells;
+  final BuildingType? pendingType;
+  final Rect? selectionBoxScreen;
+
+  WorldPainter({
+    required this.world,
+    required this.cam,
+    required this.selected,
+    required this.map,
+    required this.grid,
+    required this.buildRadiusCells,
+    required this.pendingType,
+    required this.selectionBoxScreen,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bg = Paint()..color = const Color(0xFF0B1220);
+    canvas.drawRect(Offset.zero & size, bg);
+
+    _drawMapBounds(canvas);
+    _drawBuildRadius(canvas);
+    _drawBlockedCells(canvas);
+    _drawBuildings(canvas);
+    _drawUnits(canvas);
+    _drawSelectionBox(canvas);
+    _drawHudHint(canvas, size);
+  }
+
+  void _drawMapBounds(Canvas canvas) {
+    if (map == null) return;
+
+    final topLeft = cam.worldToScreen(const Vec2(0, 0));
+    final bottomRight = cam.worldToScreen(Vec2(map!.worldWidth, map!.worldHeight));
+
+    final rect = Rect.fromLTRB(
+      topLeft.x,
+      topLeft.y,
+      bottomRight.x,
+      bottomRight.y,
+    );
+
+    canvas.drawRect(rect, Paint()..color = const Color(0xFF101A28));
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = const Color(0xFF223247),
+    );
+  }
+
+  void _drawBuildRadius(Canvas canvas) {
+    final g = grid;
+    if (g == null) return;
+
+    final fill = Paint()..color = const Color(0x2222C55E);
+
+    for (final cell in buildRadiusCells) {
+      final world = g.cellTopLeft(cell);
+      final screen = cam.worldToScreen(world);
+      final rect = Rect.fromLTWH(
+        screen.x,
+        screen.y,
+        g.cellSize * cam.zoom,
+        g.cellSize * cam.zoom,
+      );
+      canvas.drawRect(rect, fill);
+    }
+  }
+
+  void _drawBlockedCells(Canvas canvas) {
+    final g = grid;
+    final m = map;
+    if (g == null || m == null) return;
+
+    final fill = Paint()..color = const Color(0xFF243244);
+
+    for (final cell in m.blocked) {
+      final world = g.cellTopLeft(cell);
+      final screen = cam.worldToScreen(world);
+      final rect = Rect.fromLTWH(
+        screen.x,
+        screen.y,
+        g.cellSize * cam.zoom,
+        g.cellSize * cam.zoom,
+      );
+      canvas.drawRect(rect, fill);
+    }
+  }
+
+  void _drawBuildings(Canvas canvas) {
+    final g = grid;
+    if (g == null) return;
+
+    for (final id in world.buildingIds) {
+      final type = world.buildingTypes[id];
+      final pos = world.buildingPositions[id];
+      final team = world.buildingTeams[id];
+      final hp = world.buildingHealth[id];
+
+      if (type == null || pos == null) continue;
+
+      final fp = footprintFor(type);
+      final width = fp.cols * g.cellSize.toDouble();
+      final height = fp.rows * g.cellSize.toDouble();
+
+      final topLeftWorld = Vec2(pos.x - width / 2, pos.y - height / 2);
+      final topLeftScreen = cam.worldToScreen(topLeftWorld);
+
+      final rect = Rect.fromLTWH(
+        topLeftScreen.x,
+        topLeftScreen.y,
+        width * cam.zoom,
+        height * cam.zoom,
+      );
+
+      canvas.drawRect(rect, Paint()..color = _buildingColor(type, team?.id ?? 1));
+      canvas.drawRect(
+        rect,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..color = const Color(0xFF0F172A),
+      );
+
+      if (selected.contains(id)) {
+        canvas.drawRect(
+          rect.inflate(4),
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3
+            ..color = const Color(0xFFEAB308),
+        );
+      }
+
+      final tp = TextPainter(
+        text: TextSpan(
+          text: type.label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: rect.width - 8);
+
+      tp.paint(canvas, Offset(rect.left + 4, rect.top + 4));
+
+      if (hp != null && hp.max > 0) {
+        final frac = (hp.current / hp.max).clamp(0.0, 1.0);
+        const barH = 6.0;
+        final barW = rect.width.clamp(28.0, 96.0);
+        final topLeft = Offset(rect.left, rect.top - 10);
+
+        canvas.drawRect(
+          topLeft & Size(barW, barH),
+          Paint()..color = const Color(0xFF2A3440),
+        );
+
+        canvas.drawRect(
+          topLeft & Size(barW * frac, barH),
+          Paint()..color = const Color(0xFF42D392),
+        );
+      }
+    }
+  }
+
+  Color _buildingColor(BuildingType type, int teamId) {
+    switch (type) {
+      case BuildingType.hq:
+        return const Color(0xFF1D4ED8);
+      case BuildingType.powerPlant:
+        return const Color(0xFFEAB308);
+      case BuildingType.barracks:
+        return const Color(0xFF7C3AED);
+      case BuildingType.refinery:
+        return const Color(0xFFEA580C);
+      case BuildingType.warFactory:
+        return const Color(0xFF475569);
+      case BuildingType.mobileHqCenter:
+        return teamId == 2 ? const Color(0xFFEF4444) : const Color(0xFF60A5FA);
+    }
+  }
+
+  void _drawUnits(Canvas canvas) {
+    for (final id in world.entities) {
+      final pos = world.positions[id];
+      if (pos == null) continue;
+
+      final hp = world.health[id];
+      final team = world.teams[id];
+      final kind = world.unitKinds[id] ?? 'tank';
+
+      final screen = cam.worldToScreen(pos.value);
+      final center = Offset(screen.x, screen.y);
+
+      final body = Paint()
+        ..color = (team?.id == 2)
+            ? const Color(0xFFEF4444)
+            : const Color(0xFF60A5FA);
+
+      if (kind == 'mobile_hq_center') {
+        canvas.drawRect(
+          Rect.fromCenter(center: center, width: 28, height: 20),
+          body,
+        );
+      } else {
+        canvas.drawCircle(center, 14, body);
+      }
+
+      if (selected.contains(id)) {
+        canvas.drawCircle(
+          center,
+          18,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3
+            ..color = const Color(0xFFEAB308),
+        );
+      }
+
+      if (hp != null && hp.max > 0) {
+        final frac = (hp.current / hp.max).clamp(0.0, 1.0);
+        const barW = 40.0;
+        const barH = 6.0;
+
+        final topLeft = Offset(center.dx - barW / 2, center.dy - 26);
+
+        canvas.drawRect(
+          topLeft & const Size(barW, barH),
+          Paint()..color = const Color(0xFF2A3440),
+        );
+
+        canvas.drawRect(
+          topLeft & Size(barW * frac, barH),
+          Paint()..color = const Color(0xFF42D392),
+        );
+      }
+    }
+  }
+
+  void _drawSelectionBox(Canvas canvas) {
+    final rect = selectionBoxScreen;
+    if (rect == null) return;
+
+    canvas.drawRect(
+      rect,
+      Paint()..color = const Color(0x2238BDF8),
+    );
+
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = const Color(0xFF38BDF8),
+    );
+  }
+
+  void _drawHudHint(Canvas canvas, Size size) {
+    final hint = pendingType == null
+        ? '1 finger select. 2 fingers pan. 3 fingers zoom.'
+        : 'Build mode: ${pendingType!.label}';
+
+    final tp = TextPainter(
+      text: TextSpan(
+        text: hint,
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 12,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: size.width - 16);
+
+    tp.paint(canvas, Offset(8, size.height - 24));
+  }
+
+  @override
+  bool shouldRepaint(covariant WorldPainter oldDelegate) => true;
+}
+DART
+
+cat > lib/screens/game_screen.dart <<'DART'
 import 'dart:async';
 import 'dart:ui';
 
@@ -611,3 +1142,14 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 }
+DART
+
+chmod +x phase191_195_ui_polish.sh
+
+echo
+echo "Phase 191-195 files written."
+echo "Next:"
+echo "  git status --short"
+echo "  git add lib/game/state/camera_bookmarks.dart lib/game/ui/camera_view.dart lib/game/core/world_state.dart lib/game/ui/world_painter.dart lib/screens/game_screen.dart phase191_195_ui_polish.sh"
+echo "  git commit -m \"Phase 191-195: add persistent build bar, bookmarks, building HP, and 3-finger zoom\""
+echo "  git push origin working/phase170-movement-ci"

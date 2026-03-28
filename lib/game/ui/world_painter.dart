@@ -116,6 +116,7 @@ class WorldPainter extends CustomPainter {
       final type = world.buildingTypes[id];
       final pos = world.buildingPositions[id];
       final team = world.buildingTeams[id];
+      final hp = world.buildingHealth[id];
 
       if (type == null || pos == null) continue;
 
@@ -165,6 +166,23 @@ class WorldPainter extends CustomPainter {
       )..layout(maxWidth: rect.width - 8);
 
       tp.paint(canvas, Offset(rect.left + 4, rect.top + 4));
+
+      if (hp != null && hp.max > 0) {
+        final frac = (hp.current / hp.max).clamp(0.0, 1.0);
+        const barH = 6.0;
+        final barW = rect.width.clamp(28.0, 96.0);
+        final topLeft = Offset(rect.left, rect.top - 10);
+
+        canvas.drawRect(
+          topLeft & Size(barW, barH),
+          Paint()..color = const Color(0xFF2A3440),
+        );
+
+        canvas.drawRect(
+          topLeft & Size(barW * frac, barH),
+          Paint()..color = const Color(0xFF42D392),
+        );
+      }
     }
   }
 
@@ -262,7 +280,7 @@ class WorldPainter extends CustomPainter {
 
   void _drawHudHint(Canvas canvas, Size size) {
     final hint = pendingType == null
-        ? 'Tap to act. Drag to box-select. Two fingers pan.'
+        ? '1 finger select. 2 fingers pan. 3 fingers zoom.'
         : 'Build mode: ${pendingType!.label}';
 
     final tp = TextPainter(
@@ -280,7 +298,5 @@ class WorldPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant WorldPainter oldDelegate) {
-    return true;
-  }
+  bool shouldRepaint(covariant WorldPainter oldDelegate) => true;
 }

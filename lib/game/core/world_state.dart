@@ -11,6 +11,7 @@ class WorldState {
   int _nextId = 1;
 
   int get nextIdForSave => _nextId;
+
   void setNextIdForSave(int value) {
     if (value < 1) {
       throw ArgumentError('nextId must be >= 1');
@@ -31,6 +32,7 @@ class WorldState {
   final Map<EntityId, BuildingType> buildingTypes = {};
   final Map<EntityId, Vec2> buildingPositions = {};
   final Map<EntityId, Team> buildingTeams = {};
+  final Map<EntityId, Health> buildingHealth = {};
 
   int get entityCount => entities.length + buildingIds.length;
 
@@ -68,6 +70,23 @@ class WorldState {
 
   bool isMobileHqCenter(EntityId id) => unitKinds[id] == 'mobile_hq_center';
 
+  int _defaultBuildingHp(BuildingType type) {
+    switch (type) {
+      case BuildingType.hq:
+        return 300;
+      case BuildingType.powerPlant:
+        return 140;
+      case BuildingType.barracks:
+        return 160;
+      case BuildingType.refinery:
+        return 180;
+      case BuildingType.warFactory:
+        return 220;
+      case BuildingType.mobileHqCenter:
+        return 100;
+    }
+  }
+
   EntityId spawnBuilding(
     BuildingType type,
     Vec2 center, {
@@ -78,6 +97,10 @@ class WorldState {
     buildingTypes[id] = type;
     buildingPositions[id] = center;
     buildingTeams[id] = Team(teamId);
+
+    final hp = _defaultBuildingHp(type);
+    buildingHealth[id] = Health(current: hp, max: hp);
+
     return id;
   }
 
@@ -94,5 +117,6 @@ class WorldState {
     buildingTypes.remove(id);
     buildingPositions.remove(id);
     buildingTeams.remove(id);
+    buildingHealth.remove(id);
   }
 }

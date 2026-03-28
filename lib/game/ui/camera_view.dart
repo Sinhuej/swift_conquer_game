@@ -29,4 +29,29 @@ class CameraView {
       offset.y - (deltaScreen.y / zoom),
     );
   }
+
+  void setZoomAroundScreen({
+    required double newZoom,
+    required Vec2 focalScreen,
+  }) {
+    final before = screenToWorld(focalScreen);
+    zoom = newZoom.clamp(0.5, 2.5).toDouble();
+
+    offset = Vec2(
+      before.x - (focalScreen.x / zoom),
+      before.y - (focalScreen.y / zoom),
+    );
+  }
+
+  void zoomByScale({
+    required double scaleDelta,
+    required Vec2 focalScreen,
+  }) {
+    if (!scaleDelta.isFinite || scaleDelta <= 0) return;
+    final target = (zoom * scaleDelta).clamp(0.5, 2.5).toDouble();
+    setZoomAroundScreen(
+      newZoom: target,
+      focalScreen: focalScreen,
+    );
+  }
 }

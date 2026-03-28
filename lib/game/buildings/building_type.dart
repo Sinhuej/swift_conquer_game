@@ -4,6 +4,7 @@ enum BuildingType {
   powerPlant,
   barracks,
   refinery,
+  warFactory,
 }
 
 extension BuildingTypeX on BuildingType {
@@ -19,6 +20,8 @@ extension BuildingTypeX on BuildingType {
         return 'Barracks';
       case BuildingType.refinery:
         return 'Refinery';
+      case BuildingType.warFactory:
+        return 'War Factory';
     }
   }
 
@@ -30,6 +33,7 @@ extension BuildingTypeX on BuildingType {
       case BuildingType.powerPlant:
       case BuildingType.barracks:
       case BuildingType.refinery:
+      case BuildingType.warFactory:
         return true;
     }
   }
@@ -39,6 +43,7 @@ extension BuildingTypeX on BuildingType {
       case BuildingType.powerPlant:
       case BuildingType.barracks:
       case BuildingType.refinery:
+      case BuildingType.warFactory:
         return true;
       case BuildingType.mobileHqCenter:
       case BuildingType.hq:

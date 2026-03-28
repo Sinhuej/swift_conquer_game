@@ -19,5 +19,7 @@ BuildingFootprint footprintFor(BuildingType type) {
       return const BuildingFootprint(2, 2);
     case BuildingType.refinery:
       return const BuildingFootprint(3, 2);
+    case BuildingType.warFactory:
+      return const BuildingFootprint(3, 2);
   }
 }

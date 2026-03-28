@@ -19,6 +19,7 @@ class WorldPainter extends CustomPainter {
   final MapGrid? grid;
   final Set<GridCell> buildRadiusCells;
   final BuildingType? pendingType;
+  final Rect? selectionBoxScreen;
 
   WorldPainter({
     required this.world,
@@ -28,6 +29,7 @@ class WorldPainter extends CustomPainter {
     required this.grid,
     required this.buildRadiusCells,
     required this.pendingType,
+    required this.selectionBoxScreen,
   });
 
   @override
@@ -40,6 +42,7 @@ class WorldPainter extends CustomPainter {
     _drawBlockedCells(canvas);
     _drawBuildings(canvas);
     _drawUnits(canvas);
+    _drawSelectionBox(canvas);
     _drawHudHint(canvas, size);
   }
 
@@ -56,11 +59,7 @@ class WorldPainter extends CustomPainter {
       bottomRight.y,
     );
 
-    canvas.drawRect(
-      rect,
-      Paint()..color = const Color(0xFF101A28),
-    );
-
+    canvas.drawRect(rect, Paint()..color = const Color(0xFF101A28));
     canvas.drawRect(
       rect,
       Paint()
@@ -134,15 +133,24 @@ class WorldPainter extends CustomPainter {
         height * cam.zoom,
       );
 
-      final fill = Paint()
-        ..color = _buildingColor(type, team?.id ?? 1);
-      canvas.drawRect(rect, fill);
+      canvas.drawRect(rect, Paint()..color = _buildingColor(type, team?.id ?? 1));
+      canvas.drawRect(
+        rect,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..color = const Color(0xFF0F172A),
+      );
 
-      final border = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = const Color(0xFF0F172A);
-      canvas.drawRect(rect, border);
+      if (selected.contains(id)) {
+        canvas.drawRect(
+          rect.inflate(4),
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3
+            ..color = const Color(0xFFEAB308),
+        );
+      }
 
       final tp = TextPainter(
         text: TextSpan(
@@ -170,6 +178,8 @@ class WorldPainter extends CustomPainter {
         return const Color(0xFF7C3AED);
       case BuildingType.refinery:
         return const Color(0xFFEA580C);
+      case BuildingType.warFactory:
+        return const Color(0xFF475569);
       case BuildingType.mobileHqCenter:
         return teamId == 2 ? const Color(0xFFEF4444) : const Color(0xFF60A5FA);
     }
@@ -184,7 +194,7 @@ class WorldPainter extends CustomPainter {
       final team = world.teams[id];
       final kind = world.unitKinds[id] ?? 'tank';
 
-      final Vec2 screen = cam.worldToScreen(pos.value);
+      final screen = cam.worldToScreen(pos.value);
       final center = Offset(screen.x, screen.y);
 
       final body = Paint()
@@ -202,11 +212,14 @@ class WorldPainter extends CustomPainter {
       }
 
       if (selected.contains(id)) {
-        final ring = Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3
-          ..color = const Color(0xFFEAB308);
-        canvas.drawCircle(center, 18, ring);
+        canvas.drawCircle(
+          center,
+          18,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3
+            ..color = const Color(0xFFEAB308),
+        );
       }
 
       if (hp != null && hp.max > 0) {
@@ -229,9 +242,27 @@ class WorldPainter extends CustomPainter {
     }
   }
 
+  void _drawSelectionBox(Canvas canvas) {
+    final rect = selectionBoxScreen;
+    if (rect == null) return;
+
+    canvas.drawRect(
+      rect,
+      Paint()..color = const Color(0x2238BDF8),
+    );
+
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = const Color(0xFF38BDF8),
+    );
+  }
+
   void _drawHudHint(Canvas canvas, Size size) {
     final hint = pendingType == null
-        ? 'Tap units to move. Deploy Mobile HQ, then build.'
+        ? 'Tap to act. Drag to box-select. Two fingers pan.'
         : 'Build mode: ${pendingType!.label}';
 
     final tp = TextPainter(

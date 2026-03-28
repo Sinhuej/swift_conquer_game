@@ -4,15 +4,29 @@ class CameraView {
   Vec2 offset;
   double zoom;
 
-  CameraView({this.offset = const Vec2(0, 0), this.zoom = 1.0});
-
-  Vec2 screenToWorld(Vec2 screen) {
-    // world = (screen / zoom) + offset
-    return Vec2(screen.x / zoom + offset.x, screen.y / zoom + offset.y);
-  }
+  CameraView({
+    required this.offset,
+    required this.zoom,
+  });
 
   Vec2 worldToScreen(Vec2 world) {
-    // screen = (world - offset) * zoom
-    return Vec2((world.x - offset.x) * zoom, (world.y - offset.y) * zoom);
+    return Vec2(
+      (world.x - offset.x) * zoom,
+      (world.y - offset.y) * zoom,
+    );
+  }
+
+  Vec2 screenToWorld(Vec2 screen) {
+    return Vec2(
+      offset.x + (screen.x / zoom),
+      offset.y + (screen.y / zoom),
+    );
+  }
+
+  void panByScreenDelta(Vec2 deltaScreen) {
+    offset = Vec2(
+      offset.x - (deltaScreen.x / zoom),
+      offset.y - (deltaScreen.y / zoom),
+    );
   }
 }

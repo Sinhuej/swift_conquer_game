@@ -225,6 +225,18 @@ class WorldPainter extends CustomPainter {
           Rect.fromCenter(center: center, width: 28, height: 20),
           body,
         );
+      } else if (kind == 'harvester') {
+        canvas.drawRect(
+          Rect.fromCenter(center: center, width: 30, height: 18),
+          body,
+        );
+      } else if (kind == 'tank') {
+        canvas.drawRect(
+          Rect.fromCenter(center: center, width: 26, height: 16),
+          body,
+        );
+      } else if (kind == 'infantry') {
+        canvas.drawCircle(center, 9, body);
       } else {
         canvas.drawCircle(center, 14, body);
       }

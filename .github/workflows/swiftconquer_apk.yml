@@ -132,6 +132,13 @@ jobs:
       - name: Get packages
         run: flutter pub get
 
+      - name: Verify signing alias
+        env:
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          keytool -list             -keystore android/app/swiftconquer-upload.jks             -storepass "$ANDROID_KEYSTORE_PASSWORD"             -alias "$ANDROID_KEY_ALIAS"
+
       - name: Build signed release APK
         run: |
           flutter build apk --release \

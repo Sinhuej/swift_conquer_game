@@ -48,7 +48,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "$ANDROID_KEYSTORE_B64" | base64 -d > android/swiftconquer-upload.jks
+          echo "$ANDROID_KEYSTORE_B64" | base64 -d > android/app/swiftconquer-upload.jks
           cat > android/key.properties <<KEYS
           storePassword=$ANDROID_KEYSTORE_PASSWORD
           keyPassword=$ANDROID_KEY_PASSWORD

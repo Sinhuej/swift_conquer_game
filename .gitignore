@@ -12,3 +12,5 @@ _backup_*/
 _backup_phase*/
 swift_temp/
 *.bak
+android/key.properties
+android/swiftconquer-upload.jks

@@ -41,11 +41,93 @@ jobs:
               --org com.swiftconquer
           fi
 
+      - name: Restore signing files
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_B64" | base64 -d > android/swiftconquer-upload.jks
+          cat > android/key.properties <<KEYS
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=swiftconquer-upload.jks
+          KEYS
+
+      - name: Patch Android release signing
+        run: |
+          cat > android/app/build.gradle <<'GRADLE'
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+
+          def localProperties = new Properties()
+          def localPropertiesFile = rootProject.file("local.properties")
+          if (localPropertiesFile.exists()) {
+              localPropertiesFile.withReader("UTF-8") { reader ->
+                  localProperties.load(reader)
+              }
+          }
+
+          def flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
+          def flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
+
+          def keystoreProperties = new Properties()
+          def keystorePropertiesFile = rootProject.file("key.properties")
+          if (keystorePropertiesFile.exists()) {
+              keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+          }
+
+          android {
+              namespace = "com.swiftconquer.swift_conquer_game"
+              compileSdk = flutter.compileSdkVersion
+              ndkVersion = flutter.ndkVersion
+
+              defaultConfig {
+                  applicationId = "com.swiftconquer.swift_conquer_game"
+                  minSdk = flutter.minSdkVersion
+                  targetSdk = flutter.targetSdkVersion
+                  versionCode = flutterVersionCode.toInteger()
+                  versionName = flutterVersionName
+              }
+
+              signingConfigs {
+                  release {
+                      if (keystorePropertiesFile.exists()) {
+                          storeFile file(keystoreProperties["storeFile"])
+                          storePassword keystoreProperties["storePassword"]
+                          keyAlias keystoreProperties["keyAlias"]
+                          keyPassword keystoreProperties["keyPassword"]
+                      }
+                  }
+              }
+
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                      minifyEnabled false
+                      shrinkResources false
+                  }
+              }
+          }
+
+          flutter {
+              source = "../.."
+          }
+          GRADLE
+
       - name: Get packages
         run: flutter pub get
 
-      - name: Build release APK
-        run: flutter build apk --release
+      - name: Build signed release APK
+        run: |
+          flutter build apk --release \
+            --build-number $GITHUB_RUN_NUMBER \
+            --build-name 0.1.$GITHUB_RUN_NUMBER
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

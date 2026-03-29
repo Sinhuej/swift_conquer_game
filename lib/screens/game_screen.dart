@@ -53,6 +53,7 @@ class _GameScreenState extends State<GameScreen> {
 
   bool _cameraPrimed = false;
   Vec2? _homeCenter;
+  final Map<EntityId, int> _productionSpawnIndex = <EntityId, int>{};
 
   static const double _dragThreshold = 12.0;
   static const double _sidebarWidth = 220.0;
@@ -277,35 +278,44 @@ class _GameScreenState extends State<GameScreen> {
     return true;
   }
 
-  Vec2 _findProductionSpawn(EntityId buildingId) {
+  List<Vec2> _productionSpawnCandidates(EntityId buildingId) {
     final type = loop.world.buildingTypes[buildingId]!;
     final center = loop.world.buildingPositions[buildingId]!;
     final fp = footprintFor(type);
 
     final halfW = fp.cols * 40.0 / 2.0;
     final halfH = fp.rows * 40.0 / 2.0;
+    const lane = 56.0;
 
-    final candidates = <Vec2>[
-      Vec2(center.x + halfW + 34, center.y),
-      Vec2(center.x + halfW + 34, center.y - 34),
-      Vec2(center.x + halfW + 34, center.y + 34),
-      Vec2(center.x + halfW + 68, center.y),
-      Vec2(center.x - halfW - 34, center.y),
-      Vec2(center.x - halfW - 34, center.y - 34),
-      Vec2(center.x - halfW - 34, center.y + 34),
-      Vec2(center.x, center.y - halfH - 34),
-      Vec2(center.x - 34, center.y - halfH - 34),
-      Vec2(center.x + 34, center.y - halfH - 34),
-      Vec2(center.x, center.y + halfH + 34),
-      Vec2(center.x - 34, center.y + halfH + 34),
-      Vec2(center.x + 34, center.y + halfH + 34),
+    return <Vec2>[
+      for (int row = -2; row <= 2; row++)
+        Vec2(center.x + halfW + lane, center.y + row * lane),
+      for (int row = -2; row <= 2; row++)
+        Vec2(center.x + halfW + lane * 2, center.y + row * lane),
+      for (int row = -2; row <= 2; row++)
+        Vec2(center.x - halfW - lane, center.y + row * lane),
+      for (int row = -2; row <= 2; row++)
+        Vec2(center.x, center.y - halfH - lane + row * 18.0),
+      for (int row = -2; row <= 2; row++)
+        Vec2(center.x, center.y + halfH + lane + row * 18.0),
     ];
+  }
 
-    for (final c in candidates) {
-      if (_isUnitSpawnClear(c)) return c;
+  Vec2 _findProductionSpawn(EntityId buildingId) {
+    final candidates = _productionSpawnCandidates(buildingId);
+    final start = (_productionSpawnIndex[buildingId] ?? 0) % candidates.length;
+
+    for (int i = 0; i < candidates.length; i++) {
+      final idx = (start + i) % candidates.length;
+      final candidate = candidates[idx];
+      if (_isUnitSpawnClear(candidate)) {
+        _productionSpawnIndex[buildingId] = (idx + 1) % candidates.length;
+        return candidate;
+      }
     }
 
-    return Vec2(center.x + halfW + 34, center.y);
+    _productionSpawnIndex[buildingId] = (start + 1) % candidates.length;
+    return candidates[start];
   }
 
   void _spawnProducedUnit({
@@ -509,30 +519,22 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildTopBookmarkBar() {
-    return SizedBox(
-      height: 56,
-      child: Container(
-        width: double.infinity,
-        color: const Color(0xFF0F172A),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              const Text(
-                'Bookmarks:',
-                style: TextStyle(color: Colors.white70),
-              ),
-              const SizedBox(width: 8),
-              ...List<Widget>.generate(5, (i) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: _buildBookmarkChip(i + 1),
-                );
-              }),
-            ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          const Text(
+            'Bookmarks:',
+            style: TextStyle(color: Colors.white70),
           ),
-        ),
+          const SizedBox(width: 8),
+          ...List<Widget>.generate(5, (i) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: _buildBookmarkChip(i + 1),
+            );
+          }),
+        ],
       ),
     );
   }
@@ -674,7 +676,14 @@ class _GameScreenState extends State<GameScreen> {
           color: const Color(0xFF0B1220),
           child: Column(
             children: [
-              _buildTopBookmarkBar(),
+              Container(
+                width: double.infinity,
+                height: 56,
+                color: const Color(0xFF0F172A),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                alignment: Alignment.centerLeft,
+                child: _buildTopBookmarkBar(),
+              ),
               Container(
                 width: double.infinity,
                 color: const Color(0xFF111827),

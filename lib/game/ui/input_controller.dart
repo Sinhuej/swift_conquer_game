@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import '../buildings/building_footprint.dart';
@@ -15,7 +16,11 @@ class InputController {
     required CameraView cam,
   }) {
     final worldTap = cam.screenToWorld(Vec2(localPos.dx, localPos.dy));
-    final hit = _hitTest(world: world, cam: cam, localPos: localPos, worldTap: worldTap);
+
+    final hit = _hitTest(
+      world: world,
+      worldTap: worldTap,
+    );
 
     if (hit != null) {
       if (selected.contains(hit)) {
@@ -29,14 +34,92 @@ class InputController {
       return;
     }
 
-    if (selected.isNotEmpty) {
-      for (final id in selected) {
-        final move = world.moveOrders[id];
-        if (move != null) {
-          move.target = worldTap;
-        }
+    if (selected.isEmpty) return;
+
+    final movable = selected
+        .where((id) => world.moveOrders[id] != null && world.positions[id] != null)
+        .toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+
+    if (movable.isEmpty) return;
+
+    if (movable.length == 1) {
+      world.moveOrders[movable.first]?.target = worldTap;
+      return;
+    }
+
+    _issueFormationMove(
+      world: world,
+      units: movable,
+      destination: worldTap,
+    );
+  }
+
+  void _issueFormationMove({
+    required WorldState world,
+    required List<EntityId> units,
+    required Vec2 destination,
+  }) {
+    final centroid = _centroid(world, units);
+
+    Vec2 forward = destination - centroid;
+    final len = math.sqrt((forward.x * forward.x) + (forward.y * forward.y));
+    if (len < 0.001) {
+      forward = const Vec2(1, 0);
+    } else {
+      forward = Vec2(forward.x / len, forward.y / len);
+    }
+
+    final right = Vec2(-forward.y, forward.x);
+    final spacing = _formationSpacing(world, units);
+
+    final cols = math.max(2, math.sqrt(units.length).ceil());
+
+    for (int i = 0; i < units.length; i++) {
+      final id = units[i];
+      final row = i ~/ cols;
+      final col = i % cols;
+
+      final unitsRemaining = units.length - (row * cols);
+      final rowWidth = math.min(cols, unitsRemaining);
+
+      final lateral = (col - ((rowWidth - 1) / 2.0)) * spacing;
+      final depth = row * spacing * 0.9;
+
+      final target = Vec2(
+        destination.x + (right.x * lateral) - (forward.x * depth),
+        destination.y + (right.y * lateral) - (forward.y * depth),
+      );
+
+      world.moveOrders[id]?.target = target;
+    }
+  }
+
+  Vec2 _centroid(WorldState world, List<EntityId> units) {
+    double x = 0;
+    double y = 0;
+
+    for (final id in units) {
+      final pos = world.positions[id]!.value;
+      x += pos.x;
+      y += pos.y;
+    }
+
+    return Vec2(x / units.length, y / units.length);
+  }
+
+  double _formationSpacing(WorldState world, List<EntityId> units) {
+    bool hasVehicle = false;
+
+    for (final id in units) {
+      final kind = world.unitKinds[id] ?? 'tank';
+      if (kind == 'tank' || kind == 'harvester' || kind == 'mobile_hq_center') {
+        hasVehicle = true;
+        break;
       }
     }
+
+    return hasVehicle ? 56.0 : 34.0;
   }
 
   void selectBox({
@@ -62,8 +145,6 @@ class InputController {
 
   EntityId? _hitTest({
     required WorldState world,
-    required CameraView cam,
-    required Offset localPos,
     required Vec2 worldTap,
   }) {
     EntityId? bestUnit;

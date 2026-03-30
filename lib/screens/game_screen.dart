@@ -38,6 +38,7 @@ class _GameScreenState extends State<GameScreen> {
   final CameraBookmarks bookmarks = CameraBookmarks();
 
   final Map<EntityId, int> _productionSpawnIndex = <EntityId, int>{};
+  final Map<EntityId, int> _productionMoveIndex = <EntityId, int>{};
 
   Timer? _timer;
 
@@ -112,6 +113,33 @@ class _GameScreenState extends State<GameScreen> {
       return null;
     }
     return Rect.fromPoints(_dragStart!, _dragCurrent!);
+  }
+
+  ButtonStyle _flatButtonStyle() {
+    return ElevatedButton.styleFrom(
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      side: BorderSide.none,
+      backgroundColor: const Color(0xFFE8E2EA),
+      foregroundColor: const Color(0xFF6D57A8),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(999),
+      ),
+    );
+  }
+
+  ButtonStyle _chipButtonStyle() {
+    return OutlinedButton.styleFrom(
+      side: BorderSide.none,
+      shadowColor: Colors.transparent,
+      backgroundColor: const Color(0x221A2440),
+      foregroundColor: const Color(0xFF7C68B4),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(999),
+      ),
+    );
   }
 
   EntityId? _singleSelectedMobileHq() {
@@ -319,6 +347,27 @@ class _GameScreenState extends State<GameScreen> {
     ];
   }
 
+  List<Vec2> _productionMoveTargets(EntityId buildingId) {
+    final type = loop.world.buildingTypes[buildingId]!;
+    final center = loop.world.buildingPositions[buildingId]!;
+    final fp = footprintFor(type);
+
+    final halfW = fp.cols * 40.0 / 2.0;
+
+    return <Vec2>[
+      Vec2(center.x + halfW + 120, center.y - 140),
+      Vec2(center.x + halfW + 120, center.y - 80),
+      Vec2(center.x + halfW + 120, center.y - 20),
+      Vec2(center.x + halfW + 120, center.y + 40),
+      Vec2(center.x + halfW + 120, center.y + 100),
+      Vec2(center.x + halfW + 180, center.y - 140),
+      Vec2(center.x + halfW + 180, center.y - 80),
+      Vec2(center.x + halfW + 180, center.y - 20),
+      Vec2(center.x + halfW + 180, center.y + 40),
+      Vec2(center.x + halfW + 180, center.y + 100),
+    ];
+  }
+
   Vec2 _findProductionSpawn(EntityId buildingId) {
     final candidates = _productionSpawnCandidates(buildingId);
     final start = (_productionSpawnIndex[buildingId] ?? 0) % candidates.length;
@@ -335,6 +384,13 @@ class _GameScreenState extends State<GameScreen> {
     final fallback = candidates[start % candidates.length];
     _productionSpawnIndex[buildingId] = (start + 1) % candidates.length;
     return fallback;
+  }
+
+  Vec2 _nextProductionMoveTarget(EntityId buildingId) {
+    final targets = _productionMoveTargets(buildingId);
+    final idx = (_productionMoveIndex[buildingId] ?? 0) % targets.length;
+    _productionMoveIndex[buildingId] = (idx + 1) % targets.length;
+    return targets[idx];
   }
 
   void _spawnProducedUnit({
@@ -354,6 +410,9 @@ class _GameScreenState extends State<GameScreen> {
       hp: hp,
       kind: unitKind,
     );
+
+    final moveTarget = _nextProductionMoveTarget(buildingId);
+    loop.world.moveOrders[unit]?.target = moveTarget;
 
     setState(() {
       input.selected
@@ -520,6 +579,7 @@ class _GameScreenState extends State<GameScreen> {
     return GestureDetector(
       onLongPress: () => _assignGroup(slot),
       child: OutlinedButton(
+        style: _chipButtonStyle(),
         onPressed: () => _recallGroup(slot),
         child: Text('$slot${count > 0 ? "($count)" : ""}'),
       ),
@@ -531,6 +591,7 @@ class _GameScreenState extends State<GameScreen> {
     return GestureDetector(
       onLongPress: () => _saveBookmark(slot),
       child: OutlinedButton(
+        style: _chipButtonStyle(),
         onPressed: () => _recallBookmark(slot),
         child: Text('B$slot${filled ? "*" : ""}'),
       ),
@@ -607,25 +668,30 @@ class _GameScreenState extends State<GameScreen> {
             children: [
               if (_singleSelectedMobileHq() != null)
                 ElevatedButton(
+                  style: _flatButtonStyle(),
                   onPressed: _deploySelectedMobileHq,
                   child: const Text('Deploy HQ'),
                 ),
               if (isBarracks)
                 ElevatedButton(
+                  style: _flatButtonStyle(),
                   onPressed: _produceInfantry,
                   child: const Text('Produce Infantry'),
                 ),
               if (isRefinery)
                 ElevatedButton(
+                  style: _flatButtonStyle(),
                   onPressed: _produceHarvester,
                   child: const Text('Produce Harvester'),
                 ),
               if (isWarFactory)
                 ElevatedButton(
+                  style: _flatButtonStyle(),
                   onPressed: _produceTank,
                   child: const Text('Produce Tank'),
                 ),
               OutlinedButton(
+                style: _chipButtonStyle(),
                 onPressed: () {
                   setState(() {
                     buildMode.clear();
@@ -681,6 +747,7 @@ class _GameScreenState extends State<GameScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: ElevatedButton(
+                  style: _flatButtonStyle(),
                   onPressed: _hasFriendlyHq ? () => _toggleBuildMode(type) : null,
                   child: Text(
                     buildMode.pendingType == type

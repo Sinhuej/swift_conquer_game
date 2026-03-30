@@ -37,6 +37,8 @@ class _GameScreenState extends State<GameScreen> {
   final SelectionGroups groups = SelectionGroups();
   final CameraBookmarks bookmarks = CameraBookmarks();
 
+  final Map<EntityId, int> _productionSpawnIndex = <EntityId, int>{};
+
   Timer? _timer;
 
   MapDefinition? _map;
@@ -53,10 +55,10 @@ class _GameScreenState extends State<GameScreen> {
 
   bool _cameraPrimed = false;
   Vec2? _homeCenter;
-  final Map<EntityId, int> _productionSpawnIndex = <EntityId, int>{};
 
   static const double _dragThreshold = 12.0;
   static const double _sidebarWidth = 220.0;
+  static const double _topOverlayHeight = 96.0;
 
   @override
   void initState() {
@@ -243,12 +245,22 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   bool _isUnitSpawnClear(Vec2 candidate) {
+    final map = _map;
+    if (map != null) {
+      if (candidate.x < 16 ||
+          candidate.y < 16 ||
+          candidate.x > map.worldWidth - 16 ||
+          candidate.y > map.worldHeight - 16) {
+        return false;
+      }
+    }
+
     for (final id in loop.world.entities) {
       final pos = loop.world.positions[id]?.value;
       if (pos == null) continue;
       final dx = pos.x - candidate.x;
       final dy = pos.y - candidate.y;
-      if ((dx * dx) + (dy * dy) < (34 * 34)) {
+      if ((dx * dx) + (dy * dy) < (44 * 44)) {
         return false;
       }
     }
@@ -285,19 +297,25 @@ class _GameScreenState extends State<GameScreen> {
 
     final halfW = fp.cols * 40.0 / 2.0;
     final halfH = fp.rows * 40.0 / 2.0;
-    const lane = 56.0;
+
+    const dx1 = 84.0;
+    const dx2 = 132.0;
+    const dx3 = 180.0;
+    const dy = 52.0;
 
     return <Vec2>[
       for (int row = -2; row <= 2; row++)
-        Vec2(center.x + halfW + lane, center.y + row * lane),
+        Vec2(center.x + halfW + dx1, center.y + row * dy),
       for (int row = -2; row <= 2; row++)
-        Vec2(center.x + halfW + lane * 2, center.y + row * lane),
+        Vec2(center.x + halfW + dx2, center.y + row * dy),
       for (int row = -2; row <= 2; row++)
-        Vec2(center.x - halfW - lane, center.y + row * lane),
+        Vec2(center.x + halfW + dx3, center.y + row * dy),
       for (int row = -2; row <= 2; row++)
-        Vec2(center.x, center.y - halfH - lane + row * 18.0),
+        Vec2(center.x - halfW - dx1, center.y + row * dy),
       for (int row = -2; row <= 2; row++)
-        Vec2(center.x, center.y + halfH + lane + row * 18.0),
+        Vec2(center.x, center.y - halfH - 64 + row * 24.0),
+      for (int row = -2; row <= 2; row++)
+        Vec2(center.x, center.y + halfH + 64 + row * 24.0),
     ];
   }
 
@@ -314,8 +332,9 @@ class _GameScreenState extends State<GameScreen> {
       }
     }
 
+    final fallback = candidates[start % candidates.length];
     _productionSpawnIndex[buildingId] = (start + 1) % candidates.length;
-    return candidates[start];
+    return fallback;
   }
 
   void _spawnProducedUnit({
@@ -539,10 +558,41 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  Widget _buildTopOverlay() {
+    return SizedBox(
+      height: _topOverlayHeight,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: double.infinity,
+            height: 56,
+            color: const Color(0xFF0F172A),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            alignment: Alignment.centerLeft,
+            child: _buildTopBookmarkBar(),
+          ),
+          Container(
+            width: double.infinity,
+            color: const Color(0xFF111827),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Text(
+              _status,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBottomBar() {
-    final isBarracks = _singleSelectedBuildingOfType(BuildingType.barracks) != null;
-    final isRefinery = _singleSelectedBuildingOfType(BuildingType.refinery) != null;
-    final isWarFactory = _singleSelectedBuildingOfType(BuildingType.warFactory) != null;
+    final isBarracks =
+        _singleSelectedBuildingOfType(BuildingType.barracks) != null;
+    final isRefinery =
+        _singleSelectedBuildingOfType(BuildingType.refinery) != null;
+    final isWarFactory =
+        _singleSelectedBuildingOfType(BuildingType.warFactory) != null;
 
     return Container(
       width: double.infinity,
@@ -641,9 +691,7 @@ class _GameScreenState extends State<GameScreen> {
               ),
             const Spacer(),
             Text(
-              _hasFriendlyHq
-                  ? 'Build directly on the map.'
-                  : 'Deploy HQ first.',
+              _hasFriendlyHq ? 'Build directly on the map.' : 'Deploy HQ first.',
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white54),
             ),
@@ -674,159 +722,163 @@ class _GameScreenState extends State<GameScreen> {
       body: SafeArea(
         child: ColoredBox(
           color: const Color(0xFF0B1220),
-          child: Column(
+          child: Stack(
             children: [
-              Container(
-                width: double.infinity,
-                height: 56,
-                color: const Color(0xFF0F172A),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                alignment: Alignment.centerLeft,
-                child: _buildTopBookmarkBar(),
-              ),
-              Container(
-                width: double.infinity,
-                color: const Color(0xFF111827),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Text(
-                  _status,
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final playfieldSize = Size(
-                            constraints.maxWidth,
-                            constraints.maxHeight,
-                          );
-                          _primeCameraIfNeeded(playfieldSize);
+              Column(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: _topOverlayHeight),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final playfieldSize = Size(
+                                  constraints.maxWidth,
+                                  constraints.maxHeight,
+                                );
+                                _primeCameraIfNeeded(playfieldSize);
 
-                          return Listener(
-                            onPointerDown: (event) {
-                              _activePointers++;
-                              if (_activePointers == 1 && !buildMode.isActive) {
-                                _dragStart = event.localPosition;
-                                _dragCurrent = event.localPosition;
-                                _dragSelecting = false;
-                              } else {
-                                _dragStart = null;
-                                _dragCurrent = null;
-                                _dragSelecting = false;
-                              }
-                              setState(() {});
-                            },
-                            onPointerMove: (event) {
-                              if (_activePointers == 1 &&
-                                  _dragStart != null &&
-                                  !buildMode.isActive) {
-                                _dragCurrent = event.localPosition;
-                                final delta = _dragCurrent! - _dragStart!;
-                                if (delta.distance >= _dragThreshold) {
-                                  _dragSelecting = true;
-                                }
-                                setState(() {});
-                              }
-                            },
-                            onPointerUp: (event) {
-                              if (_activePointers == 1) {
-                                if (_dragSelecting) {
-                                  setState(_finishSelectionDrag);
-                                } else {
-                                  _dragStart = null;
-                                  _dragCurrent = null;
-                                  _dragSelecting = false;
-                                  _handleTapAt(event.localPosition);
-                                }
-                              }
-                              _activePointers = (_activePointers - 1).clamp(0, 99);
-                              if (_activePointers < 2) {
-                                _lastScaleFocal = null;
-                              }
-                              if (_activePointers < 3) {
-                                _lastScaleValue = null;
-                              }
-                              setState(() {});
-                            },
-                            onPointerCancel: (_) {
-                              _activePointers = 0;
-                              _dragStart = null;
-                              _dragCurrent = null;
-                              _dragSelecting = false;
-                              _lastScaleFocal = null;
-                              _lastScaleValue = null;
-                              setState(() {});
-                            },
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onScaleStart: (details) {
-                                if (_activePointers >= 2) {
-                                  _lastScaleFocal = details.focalPoint;
-                                }
-                                if (_activePointers >= 3) {
-                                  _lastScaleValue = 1.0;
-                                } else {
-                                  _lastScaleValue = null;
-                                }
-                                if (_activePointers >= 2) {
-                                  _dragStart = null;
-                                  _dragCurrent = null;
-                                  _dragSelecting = false;
-                                }
+                                return Listener(
+                                  onPointerDown: (event) {
+                                    _activePointers++;
+                                    if (_activePointers == 1 &&
+                                        !buildMode.isActive) {
+                                      _dragStart = event.localPosition;
+                                      _dragCurrent = event.localPosition;
+                                      _dragSelecting = false;
+                                    } else {
+                                      _dragStart = null;
+                                      _dragCurrent = null;
+                                      _dragSelecting = false;
+                                    }
+                                    setState(() {});
+                                  },
+                                  onPointerMove: (event) {
+                                    if (_activePointers == 1 &&
+                                        _dragStart != null &&
+                                        !buildMode.isActive) {
+                                      _dragCurrent = event.localPosition;
+                                      final delta =
+                                          _dragCurrent! - _dragStart!;
+                                      if (delta.distance >= _dragThreshold) {
+                                        _dragSelecting = true;
+                                      }
+                                      setState(() {});
+                                    }
+                                  },
+                                  onPointerUp: (event) {
+                                    if (_activePointers == 1) {
+                                      if (_dragSelecting) {
+                                        setState(_finishSelectionDrag);
+                                      } else {
+                                        _dragStart = null;
+                                        _dragCurrent = null;
+                                        _dragSelecting = false;
+                                        _handleTapAt(event.localPosition);
+                                      }
+                                    }
+                                    _activePointers =
+                                        (_activePointers - 1).clamp(0, 99);
+                                    if (_activePointers < 2) {
+                                      _lastScaleFocal = null;
+                                    }
+                                    if (_activePointers < 3) {
+                                      _lastScaleValue = null;
+                                    }
+                                    setState(() {});
+                                  },
+                                  onPointerCancel: (_) {
+                                    _activePointers = 0;
+                                    _dragStart = null;
+                                    _dragCurrent = null;
+                                    _dragSelecting = false;
+                                    _lastScaleFocal = null;
+                                    _lastScaleValue = null;
+                                    setState(() {});
+                                  },
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onScaleStart: (details) {
+                                      if (_activePointers >= 2) {
+                                        _lastScaleFocal = details.focalPoint;
+                                      }
+                                      if (_activePointers >= 3) {
+                                        _lastScaleValue = 1.0;
+                                      } else {
+                                        _lastScaleValue = null;
+                                      }
+                                      if (_activePointers >= 2) {
+                                        _dragStart = null;
+                                        _dragCurrent = null;
+                                        _dragSelecting = false;
+                                      }
+                                    },
+                                    onScaleUpdate: (details) {
+                                      if (_activePointers == 2) {
+                                        final current = details.focalPoint;
+                                        final last = _lastScaleFocal;
+                                        if (last != null) {
+                                          final delta = current - last;
+                                          cam.panByScreenDelta(
+                                            Vec2(delta.dx, delta.dy),
+                                          );
+                                        }
+                                        _lastScaleFocal = current;
+                                        setState(() {});
+                                      } else if (_activePointers >= 3) {
+                                        final current = details.focalPoint;
+                                        final lastScale =
+                                            _lastScaleValue ?? 1.0;
+                                        final deltaScale =
+                                            details.scale / lastScale;
+                                        cam.zoomByScale(
+                                          scaleDelta: deltaScale,
+                                          focalScreen:
+                                              Vec2(current.dx, current.dy),
+                                        );
+                                        _lastScaleFocal = current;
+                                        _lastScaleValue = details.scale;
+                                        setState(() {});
+                                      }
+                                    },
+                                    onScaleEnd: (_) {
+                                      _lastScaleFocal = null;
+                                      _lastScaleValue = null;
+                                    },
+                                    child: CustomPaint(
+                                      painter: WorldPainter(
+                                        world: loop.world,
+                                        cam: cam,
+                                        selected: input.selected,
+                                        map: _map,
+                                        grid: g,
+                                        buildRadiusCells: buildRadius,
+                                        pendingType: buildMode.pendingType,
+                                        selectionBoxScreen: _selectionBoxScreen,
+                                      ),
+                                      child: const SizedBox.expand(),
+                                    ),
+                                  ),
+                                );
                               },
-                              onScaleUpdate: (details) {
-                                if (_activePointers == 2) {
-                                  final current = details.focalPoint;
-                                  final last = _lastScaleFocal;
-                                  if (last != null) {
-                                    final delta = current - last;
-                                    cam.panByScreenDelta(Vec2(delta.dx, delta.dy));
-                                  }
-                                  _lastScaleFocal = current;
-                                  setState(() {});
-                                } else if (_activePointers >= 3) {
-                                  final current = details.focalPoint;
-                                  final lastScale = _lastScaleValue ?? 1.0;
-                                  final deltaScale = details.scale / lastScale;
-                                  cam.zoomByScale(
-                                    scaleDelta: deltaScale,
-                                    focalScreen: Vec2(current.dx, current.dy),
-                                  );
-                                  _lastScaleFocal = current;
-                                  _lastScaleValue = details.scale;
-                                  setState(() {});
-                                }
-                              },
-                              onScaleEnd: (_) {
-                                _lastScaleFocal = null;
-                                _lastScaleValue = null;
-                              },
-                              child: CustomPaint(
-                                painter: WorldPainter(
-                                  world: loop.world,
-                                  cam: cam,
-                                  selected: input.selected,
-                                  map: _map,
-                                  grid: g,
-                                  buildRadiusCells: buildRadius,
-                                  pendingType: buildMode.pendingType,
-                                  selectionBoxScreen: _selectionBoxScreen,
-                                ),
-                                child: const SizedBox.expand(),
-                              ),
                             ),
-                          );
-                        },
+                          ),
+                          _buildPersistentBuildSidebar(),
+                        ],
                       ),
                     ),
-                    _buildPersistentBuildSidebar(),
-                  ],
-                ),
+                  ),
+                  _buildBottomBar(),
+                ],
               ),
-              _buildBottomBar(),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: _sidebarWidth,
+                child: _buildTopOverlay(),
+              ),
             ],
           ),
         ),
